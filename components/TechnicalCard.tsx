@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Zap, Camera, Ruler, Weight, Activity, Cable, Cpu, Home, Sliders } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
-import { calculateStringSuggestion, MODULE_OPTIONS, INVERTER_OPTIONS } from '../services/solarLogic';
+import { calculateStringSuggestion, calculateModulesFromBill, MODULE_OPTIONS, INVERTER_OPTIONS } from '../services/solarLogic';
 
 interface Props {
   data: SolarSystemData;
@@ -26,6 +25,25 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
      onChange('moduleCount', count);
      // Auto update strings based on new count
      onChange('modulesPerString', calculateStringSuggestion(count));
+  };
+
+  const handleModulePowerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newPower = parseInt(e.target.value) || 575;
+    onChange('modulePowerW', newPower);
+
+    // Recalcula a quantidade de módulos com base na conta atual
+    // para garantir que a geração se mantenha (Mais potência = Menos módulos)
+    if (data.billAmount > 0) {
+        const newCount = calculateModulesFromBill(
+            data.billAmount,
+            data.energyTariff,
+            data.hsp,
+            newPower
+        );
+        onChange('moduleCount', newCount);
+        // Atualiza a sugestão de string para a nova quantidade
+        onChange('modulesPerString', calculateStringSuggestion(newCount));
+    }
   };
 
   const isOverloadHigh = parseInt(specs.overload) > 140;
@@ -53,7 +71,7 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
            <label className="block text-xs font-bold text-slate-400 mb-1">Modelo Módulo (W)</label>
            <select 
             value={data.modulePowerW} 
-            onChange={(e) => onChange('modulePowerW', parseInt(e.target.value) || 0)}
+            onChange={handleModulePowerChange}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none font-bold text-sm"
           >
               {MODULE_OPTIONS.map((opt) => (

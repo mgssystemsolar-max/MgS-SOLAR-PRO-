@@ -1,4 +1,3 @@
-
 import { SolarSystemData, TechnicalSpecs, MonthlyProduction, ChecklistItem, FinancialProjection } from '../types';
 
 // Lista de Módulos Fotovoltaicos Disponíveis
@@ -72,11 +71,29 @@ export const calculateModulesFromBill = (bill: number, tariff: number, hsp: numb
 };
 
 export const calculateStringSuggestion = (totalModules: number): number => {
-  if (totalModules <= 12) {
+  if (totalModules <= 0) return 0;
+
+  // Limite seguro típico para inversores string (1000V) com painéis modernos (~50V Voc)
+  // Geralmente entre 18 a 20 módulos.
+  const SAFE_MAX_STRING = 19; 
+
+  // Se cabe em uma string, retorna o total
+  if (totalModules <= SAFE_MAX_STRING) {
     return totalModules;
-  } else {
-    // Tenta dividir igualmente
-    return Math.ceil(totalModules / 2);
+  } 
+  
+  // Se não cabe, tenta dividir em strings iguais
+  let numberOfStrings = 2;
+  while (true) {
+    const modulesPerString = Math.ceil(totalModules / numberOfStrings);
+    if (modulesPerString <= SAFE_MAX_STRING) {
+      // Retorna a quantidade de módulos por string (arredondado para cima para garantir segurança na divisão visual)
+      // Ex: 88 módulos / 5 strings = 17.6 -> retorna 18 (o usuário ajusta se quer 17 ou 18 depois)
+      return modulesPerString;
+    }
+    numberOfStrings++;
+    // Safety break para evitar loops infinitos em inputs absurdos
+    if (numberOfStrings > 50) return 1; 
   }
 };
 
@@ -188,7 +205,9 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
   if (isWhole) {
     stringConfigText = `${numStrings} Strings de ${data.modulesPerString} módulos`;
   } else {
-    stringConfigText = `~${Math.ceil(Number(numStrings))} Strings (Config. Mista)`;
+    // Exibe número aproximado
+    const nStrings = Math.ceil(Number(numStrings));
+    stringConfigText = `~${nStrings} Strings (Config. Mista / Sugerido: ${data.modulesPerString}/str)`;
   }
 
   // 5. Generation Totals Calculation
