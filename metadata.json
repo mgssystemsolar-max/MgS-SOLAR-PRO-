@@ -1,0 +1,8 @@
+{
+  "name": "MGS SYSTEM SOLAR  Pro",
+  "description": "A professional solar PV system calculator and management tool. Features commercial and technical sizing, generation estimation, and onsite checklist management.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
