@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet } from 'lucide-react';
+import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculatePayback, calculateModulesFromBill, calculateStringSuggestion } from '../services/solarLogic';
@@ -282,8 +282,24 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         )}
       </div>
 
-      {/* Inputs Conta e Tarifa */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      {/* Inputs Conta e Tarifa e Categoria */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+         <div>
+          <label className="block text-xs font-bold text-slate-400 mb-1 flex items-center gap-1">
+              <Building size={12} /> Categoria
+          </label>
+          <select 
+            value={data.clientType} 
+            onChange={(e) => onChange('clientType', e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300 appearance-none"
+          >
+              <option value="Residencial">Residencial</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Industrial">Industrial</option>
+              <option value="Rural">Rural</option>
+          </select>
+        </div>
+
         <div className="relative">
           <label className="block text-xs font-bold text-sky-400 mb-1 flex items-center gap-1">
               <Wand2 size={12} /> Conta Mensal (R$)

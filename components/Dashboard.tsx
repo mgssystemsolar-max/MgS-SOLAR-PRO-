@@ -22,6 +22,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [solarData, setSolarData] = useState<SolarSystemData>({
     clientName: '',
     clientPhone: '',
+    clientType: 'Residencial', // Default category
     billAmount: 650,
     energyTariff: 0.95, // Default tariff
     investmentAmount: 18000,
@@ -149,6 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     // Ensure backwards compatibility with older saved projects that might miss new fields
     setSolarData({
         ...proj.data,
+        clientType: proj.data.clientType || 'Residencial',
         energyTariff: proj.data.energyTariff || 0.95,
         roofType: proj.data.roofType || 'Cerâmico',
         modulesPerString: proj.data.modulesPerString || proj.data.moduleCount,

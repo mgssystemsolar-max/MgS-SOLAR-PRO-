@@ -2,6 +2,7 @@
 export interface SolarSystemData {
   clientName?: string;
   clientPhone?: string;
+  clientType: 'Residencial' | 'Comercial' | 'Industrial' | 'Rural'; // Novo campo
   billAmount: number;
   energyTariff: number; // Preço do kWh (Ex: 0.95)
   investmentAmount: number; // Valor Final de Venda
