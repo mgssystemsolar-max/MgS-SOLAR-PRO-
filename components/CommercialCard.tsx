@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap, UploadCloud, FileText, ScanLine } from 'lucide-react';
+import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap, UploadCloud, FileText, ScanLine, Crosshair } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculatePayback, calculateModulesFromBill, calculateStringSuggestion } from '../services/solarLogic';
@@ -93,7 +93,12 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
 
     setLoadingLoc(true);
     try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.address)}&limit=1`);
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.address)}&limit=1`, {
+            headers: { 'Accept-Language': 'pt-BR' }
+        });
+        
+        if (!response.ok) throw new Error('Falha na conexão com API de mapas');
+
         const results = await response.json();
         
         if (results && results.length > 0) {
@@ -104,7 +109,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
             alert("Endereço não encontrado.");
         }
     } catch (error) {
-        console.error("Erro na busca de endereço:", error);
+        console.warn("Erro na busca de endereço:", error);
         alert("Erro ao buscar endereço. Verifique sua conexão.");
     } finally {
         setLoadingLoc(false);
@@ -115,29 +120,49 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
   const handleGeoLocation = () => {
     if (navigator.geolocation) {
       setLoadingLoc(true);
+      onChange('address', 'Buscando satélites (Alta Precisão)...'); // Feedback
       
       const options = {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
+        enableHighAccuracy: true, // PRIORIDADE PARA GPS DE HARDWARE
+        timeout: 20000,           // 20s para fixar satélites
+        maximumAge: 0             // PROIBIR CACHE (Resolve problema de endereço fixo)
       };
 
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+          
+          console.log(`GPS Fix: ${lat}, ${lng} (Acc: ${accuracy}m)`);
           
           updateLocationData(lat, lng);
 
           // Reverse Geocoding com OpenStreetMap
           try {
-              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+              // Zoom 18 foca em número/rua. Addressdetails traz metadados.
+              const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+              
+              const response = await fetch(url, {
+                  headers: {
+                      'Accept-Language': 'pt-BR'
+                  }
+              });
+
+              if (!response.ok) {
+                  throw new Error(`Status: ${response.status}`);
+              }
+
               const result = await response.json();
               if (result && result.display_name) {
                   onChange('address', result.display_name);
+              } else {
+                  onChange('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
               }
           } catch (e) {
-              console.error("Erro no geocoding reverso", e);
+              console.warn("Geocoding reverso indisponível (offline ou bloqueio):", e);
+              // Fallback se falhar API - Mostra coordenadas de forma limpa
+              onChange('address', `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
           }
           
           setLoadingLoc(false);
@@ -145,10 +170,12 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         (error) => {
           console.error(error);
           setLoadingLoc(false);
+          onChange('address', ''); // Limpa status
+          
           let msg = "Não foi possível obter a localização.";
-          if (error.code === 1) msg = "Permissão de localização negada pelo usuário.";
-          if (error.code === 2) msg = "Sinal de GPS indisponível ou fraco.";
-          if (error.code === 3) msg = "Tempo limite esgotado ao buscar GPS.";
+          if (error.code === 1) msg = "Permissão de GPS negada. Ative nas configurações.";
+          if (error.code === 2) msg = "Sinal de GPS indisponível. Vá para área externa.";
+          if (error.code === 3) msg = "Tempo limite esgotado. GPS demorou a responder.";
           alert(msg);
         },
         options
@@ -318,17 +345,18 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
                 onClick={handleAddressSearch}
                 disabled={loadingLoc}
                 className="bg-sky-500 hover:bg-sky-600 text-white p-3 rounded-lg transition-colors print:hidden flex items-center justify-center disabled:opacity-50 disabled:cursor-wait"
-                title="Buscar Endereço"
+                title="Buscar Endereço Digitado"
             >
                 {loadingLoc ? <Loader2 className="animate-spin" size={20}/> : <Search size={20} />}
             </button>
             <button 
                 onClick={handleGeoLocation}
                 disabled={loadingLoc}
-                className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors print:hidden flex items-center justify-center disabled:opacity-50"
-                title="Usar meu GPS Atual (Alta Precisão)"
+                className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors print:hidden flex items-center justify-center disabled:opacity-50 gap-2 w-auto px-4"
+                title="Usar GPS de Alta Precisão (Hardware)"
             >
-                <MapPin size={20} />
+                 {loadingLoc ? <Loader2 className="animate-spin" size={20}/> : <Crosshair size={20} />}
+                 <span className="hidden sm:inline text-xs font-bold">MEU GPS</span>
             </button>
         </div>
         {data.latitude && (
