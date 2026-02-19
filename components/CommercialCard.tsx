@@ -126,7 +126,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
             alert("Endereço não encontrado. Tente 'Cidade, Estado' ou use coordenadas.");
         }
     } catch (error) {
-        console.log("Erro na busca de endereço (API Indisponível):", error);
+        console.warn("Erro na busca de endereço (API Indisponível/Offline).");
         alert("Serviço de mapas indisponível no momento.\n\nDica: Você pode digitar as coordenadas manualmente no campo (Ex: -23.55, -46.63).");
     } finally {
         setLoadingLoc(false);
@@ -149,9 +149,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         async (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          const accuracy = position.coords.accuracy;
-          
-          console.log(`GPS Fix: ${lat}, ${lng} (Acc: ${accuracy}m)`);
           
           updateLocationData(lat, lng);
 
@@ -177,7 +174,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
                   onChange('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
               }
           } catch (e) {
-              console.log("Modo Offline/Erro API: Usando coordenadas brutas.");
               // Fallback se falhar API - Mostra coordenadas de forma limpa para que a busca manual funcione
               onChange('address', `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
           }
@@ -185,7 +181,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
           setLoadingLoc(false);
         },
         (error) => {
-          console.error(error);
+          console.warn("GPS Error:", error.code);
           setLoadingLoc(false);
           onChange('address', ''); // Limpa status
           

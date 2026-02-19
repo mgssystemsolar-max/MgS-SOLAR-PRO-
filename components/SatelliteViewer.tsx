@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Map, MousePointerClick, Maximize2, Grid3X3, X, Compass } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
@@ -11,33 +12,32 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
 
-  const MapContainer = () => (
-      <div className="relative w-full h-full bg-slate-900">
+  // Renderização do Mapa extraída para evitar re-declaração e reload do iframe
+  const renderMapContent = () => (
+    <div className="relative w-full h-full bg-slate-900">
          <iframe 
-            key={`${lat}-${lng}`} // Key is critical to force reload when coordinates change
+            key={`${lat}-${lng}`} // Key força atualização apenas se mudar coordenadas
             title="Satellite Map"
             width="100%" 
             height="100%" 
             frameBorder="0" 
-            style={{ border: 0, borderRadius: '8px' }}
+            style={{ border: 0, borderRadius: '8px', display: 'block' }}
             src={`https://maps.google.com/maps?q=${lat},${lng}&t=k&z=20&ie=UTF8&iwloc=&output=embed`}
             allowFullScreen
          />
          
          {/* Grid Overlay */}
-         {showGrid && (
-            <div 
-                className="absolute inset-0 pointer-events-none opacity-30 z-10" 
-                style={{ 
-                    backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', 
-                    backgroundSize: '20px 20px' 
-                }}
-            />
-          )}
-      </div>
+         <div 
+            className={`absolute inset-0 pointer-events-none z-10 transition-opacity duration-300 ${showGrid ? 'opacity-30' : 'opacity-0'}`} 
+            style={{ 
+                backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', 
+                backgroundSize: '20px 20px' 
+            }}
+        />
+    </div>
   );
 
-  const Placeholder = () => (
+  const renderPlaceholder = () => (
     <div className="flex flex-col items-center justify-center h-64 bg-slate-900/50 text-center p-6 border border-slate-700 rounded-lg">
         <div className="bg-slate-800 p-4 rounded-full mb-3 animate-pulse">
             <MousePointerClick className="text-slate-500 w-8 h-8" />
@@ -49,11 +49,13 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
     </div>
   );
 
+  const hasLocation = lat !== undefined && lng !== undefined;
+
   // Fullscreen Modal View
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800">
+      <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col animate-fade-in">
+        <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800 shadow-xl">
           <h2 className="text-white font-bold flex items-center gap-2">
             <Map size={20} className="text-orange-400" /> 
             Avaliação de Telhado (Satélite)
@@ -67,14 +69,14 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
               </button>
               <button 
                 onClick={() => setIsFullscreen(false)}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-red-900/20"
               >
                 <X size={20} /> Fechar
               </button>
           </div>
         </div>
-        <div className="flex-1 relative">
-             {lat && lng ? <MapContainer /> : <Placeholder />}
+        <div className="flex-1 relative bg-black">
+             {hasLocation ? renderMapContent() : renderPlaceholder()}
         </div>
       </div>
     );
@@ -89,7 +91,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             icon={<Map size={18} className="text-orange-400" />} 
             colorClass="text-orange-400" 
         />
-        {lat && lng && (
+        {hasLocation && (
              <div className="flex gap-2">
                 <button 
                     onClick={() => setShowGrid(!showGrid)}
@@ -109,11 +111,11 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
         )}
       </div>
       
-      <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
-         {lat && lng ? <MapContainer /> : <Placeholder />}
+      <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden border border-slate-700 shadow-inner">
+         {hasLocation ? renderMapContent() : renderPlaceholder()}
       </div>
       
-      {lat && lng && (
+      {hasLocation && (
         <div className="mt-3 flex gap-2 items-start bg-yellow-500/10 p-2 rounded border border-yellow-500/20">
             <Compass size={14} className="text-yellow-500 mt-0.5 flex-shrink-0" />
             <p className="text-[10px] text-yellow-500/80 leading-tight">

@@ -39,6 +39,10 @@ export const ProposalView: React.FC<Props> = ({
   const validUntil = new Date();
   validUntil.setDate(today.getDate() + (settings.validityDays || 5));
 
+  // Formatação explícita para PT-BR
+  const formattedDate = today.toLocaleDateString('pt-BR');
+  const formattedValidDate = validUntil.toLocaleDateString('pt-BR');
+
   // Calculate Avg Consumption Estimation
   const estimatedConsumption = Math.round(data.billAmount / data.energyTariff);
 
@@ -79,7 +83,7 @@ export const ProposalView: React.FC<Props> = ({
             <div className="text-right w-full md:w-auto flex flex-col items-end">
                 <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">Proposta Comercial</h2>
                 <div className="text-sm text-slate-500 mt-1 flex flex-col items-end">
-                    <div>Data: {today.toLocaleDateString()}</div>
+                    <div>Data: {formattedDate}</div>
                     <div className="flex items-center justify-end gap-1 text-green-600 font-bold group">
                         <span>Validade:</span>
                         <input 
@@ -91,7 +95,7 @@ export const ProposalView: React.FC<Props> = ({
                             title="Editar dias de validade"
                         />
                         <span className="print:hidden">dias</span>
-                        <span>({validUntil.toLocaleDateString()})</span>
+                        <span>({formattedValidDate})</span>
                     </div>
                 </div>
             </div>
