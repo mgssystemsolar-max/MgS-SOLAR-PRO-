@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, Eye, EyeOff, Mail, Lock, ArrowLeft, UserPlus, KeyRound } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Mail, Lock, ArrowLeft, UserPlus, KeyRound, Check } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (email: string) => void;
@@ -14,6 +14,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -166,9 +167,22 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             {error && <p className="text-red-400 text-sm text-center font-medium bg-red-500/10 p-2 rounded">{error}</p>}
             {successMsg && <p className="text-green-400 text-sm text-center font-medium bg-green-500/10 p-2 rounded">{successMsg}</p>}
 
-            {/* Link Recuperar Senha (Apenas Login) */}
+            {/* Opções Extras (Lembre-me e Recuperar Senha) - Apenas Login */}
             {mode === 'login' && (
-                <div className="flex justify-end">
+                <div className="flex justify-between items-center mt-1">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-green-500 border-green-500' : 'border-slate-600 bg-slate-900 group-hover:border-slate-500'}`}>
+                            {rememberMe && <Check size={12} className="text-white" strokeWidth={4} />}
+                        </div>
+                        <input 
+                            type="checkbox" 
+                            className="hidden"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                        />
+                        <span className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors font-medium select-none">Lembre-me</span>
+                    </label>
+
                     <button 
                         type="button"
                         onClick={() => toggleMode('recovery')}

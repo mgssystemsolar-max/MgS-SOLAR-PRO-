@@ -80,8 +80,18 @@ export const ProposalView: React.FC<Props> = ({
                 <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">Proposta Comercial</h2>
                 <div className="text-sm text-slate-500 mt-1 flex flex-col items-end">
                     <div>Data: {today.toLocaleDateString()}</div>
-                    <div className="text-green-600 font-bold">
-                        Validade: {validUntil.toLocaleDateString()}
+                    <div className="flex items-center justify-end gap-1 text-green-600 font-bold group">
+                        <span>Validade:</span>
+                        <input 
+                            type="number"
+                            min="1"
+                            value={settings.validityDays}
+                            onChange={(e) => onSettingsChange({...settings, validityDays: parseInt(e.target.value) || 1})}
+                            className="w-8 bg-transparent text-right border-b border-transparent hover:border-green-400 focus:border-green-500 focus:outline-none print:hidden cursor-pointer text-green-600 font-bold"
+                            title="Editar dias de validade"
+                        />
+                        <span className="print:hidden">dias</span>
+                        <span>({validUntil.toLocaleDateString()})</span>
                     </div>
                 </div>
             </div>
@@ -98,7 +108,7 @@ export const ProposalView: React.FC<Props> = ({
                     <div className="text-sm text-slate-600">{data.address || "Endereço não informado"}</div>
                     <div className="flex gap-4 mt-2">
                         <span className="text-xs bg-white border border-slate-200 px-2 py-1 rounded text-slate-500">
-                           <b>Ligação:</b> {data.connectionType}
+                           <b>Ligação:</b> {data.connectionType} ({data.clientGroup === 'A' ? 'Grupo A' : 'Grupo B'})
                         </span>
                         <span className="text-xs bg-white border border-slate-200 px-2 py-1 rounded text-slate-500">
                            <b>Consumo Médio:</b> ~{estimatedConsumption} kWh
