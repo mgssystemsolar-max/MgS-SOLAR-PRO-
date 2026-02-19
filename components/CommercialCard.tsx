@@ -69,11 +69,9 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         if (results && results.length > 0) {
             const lat = parseFloat(results[0].lat);
             const lng = parseFloat(results[0].lon);
-            const formattedAddress = results[0].display_name;
+            // const formattedAddress = results[0].display_name;
 
             updateLocationData(lat, lng);
-            // Opcional: Atualizar com o endereço formatado retornado ou manter o que o usuário digitou
-            // onChange('address', formattedAddress); 
         } else {
             alert("Endereço não encontrado.");
         }
@@ -89,6 +87,13 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
   const handleGeoLocation = () => {
     if (navigator.geolocation) {
       setLoadingLoc(true);
+      
+      const options = {
+        enableHighAccuracy: true, // Força uso do GPS real (não apenas IP/Wi-Fi)
+        timeout: 15000,           // Aumenta tempo limite para 15s
+        maximumAge: 0             // Não usar cache de posição anterior
+      };
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude;
@@ -112,8 +117,13 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         (error) => {
           console.error(error);
           setLoadingLoc(false);
-          alert("Não foi possível obter a localização. Verifique as permissões do navegador.");
-        }
+          let msg = "Não foi possível obter a localização.";
+          if (error.code === 1) msg = "Permissão de localização negada pelo usuário.";
+          if (error.code === 2) msg = "Sinal de GPS indisponível ou fraco.";
+          if (error.code === 3) msg = "Tempo limite esgotado ao buscar GPS.";
+          alert(msg);
+        },
+        options
       );
     } else {
       alert("Geolocalização não suportada neste navegador.");
@@ -270,7 +280,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
                 onClick={handleGeoLocation}
                 disabled={loadingLoc}
                 className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors print:hidden flex items-center justify-center disabled:opacity-50"
-                title="Usar meu GPS Atual"
+                title="Usar meu GPS Atual (Alta Precisão)"
             >
                 <MapPin size={20} />
             </button>

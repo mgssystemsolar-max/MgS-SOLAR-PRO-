@@ -14,6 +14,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
   const MapContainer = () => (
       <div className="relative w-full h-full bg-slate-900">
          <iframe 
+            key={`${lat}-${lng}`} // Key is critical to force reload when coordinates change
             title="Satellite Map"
             width="100%" 
             height="100%" 
