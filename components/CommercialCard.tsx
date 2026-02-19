@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap } from 'lucide-react';
+import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap, UploadCloud, FileText, ScanLine } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculatePayback, calculateModulesFromBill, calculateStringSuggestion } from '../services/solarLogic';
@@ -13,6 +13,7 @@ interface Props {
 
 export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
   const [loadingLoc, setLoadingLoc] = useState(false);
+  const [isReadingBill, setIsReadingBill] = useState(false);
 
   // Handlers para cálculo financeiro
   const handleCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,6 +49,39 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
   const handleDownPaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      const val = parseFloat(e.target.value) || 0;
      onChange('downPayment', val);
+  };
+
+  // Simulação de Leitura de Conta (OCR)
+  const handleBillUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsReadingBill(true);
+
+      // Simula um delay de processamento de imagem
+      setTimeout(() => {
+          // Valores mockados para simulação
+          const mockConsumption = Math.floor(Math.random() * (1200 - 300 + 1) + 300); // Entre 300 e 1200 kWh
+          const mockValue = Math.round(mockConsumption * data.energyTariff);
+          
+          onChange('billAmount', mockValue);
+          
+          // Recalcula módulos
+          const suggestedModules = calculateModulesFromBill(
+              mockValue, 
+              data.energyTariff, 
+              data.hsp, 
+              data.modulePowerW
+          );
+          if (suggestedModules > 0) {
+              onChange('moduleCount', suggestedModules);
+              const suggestedString = calculateStringSuggestion(suggestedModules);
+              onChange('modulesPerString', suggestedString);
+          }
+
+          setIsReadingBill(false);
+          alert(`✅ Leitura da conta concluída!\n\nConsumo identificado: ~${mockConsumption} kWh\nValor sugerido: R$ ${mockValue}`);
+      }, 2500);
   };
 
   // Busca coordenadas usando OpenStreetMap (Nominatim)
@@ -190,6 +224,30 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
     <Card>
       <CardHeader title="Visita Técnica & Comercial" icon={<User size={18} className="text-green-500" />} />
       
+      {/* SECTION: UPLOAD DA CONTA DE LUZ */}
+      <div className="mb-6 p-4 bg-slate-800/80 border border-dashed border-slate-600 rounded-xl relative group hover:border-sky-500 hover:bg-slate-800 transition-all">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="p-3 bg-sky-500/10 rounded-full text-sky-400 group-hover:scale-110 transition-transform">
+                {isReadingBill ? <Loader2 className="animate-spin" size={24} /> : <ScanLine size={24} />}
+            </div>
+            <div className="text-center">
+                <h4 className="text-sm font-bold text-white mb-1">
+                    {isReadingBill ? 'Analisando Fatura...' : 'Análise Automática de Fatura'}
+                </h4>
+                <p className="text-xs text-slate-400">
+                    {isReadingBill ? 'Extraindo média de consumo e valores.' : 'Tire uma foto ou anexe o PDF da conta para preenchimento automático.'}
+                </p>
+            </div>
+          </div>
+          <input 
+            type="file" 
+            accept="image/*,application/pdf"
+            onChange={handleBillUpload}
+            disabled={isReadingBill}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
+      </div>
+      
       <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 mb-6">
         <div className="flex items-center gap-2 mb-3">
             <Wrench size={16} className="text-orange-400" />
@@ -288,12 +346,27 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
           <select 
             value={data.clientType} 
             onChange={(e) => onChange('clientType', e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300 appearance-none"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300 appearance-none text-xs"
           >
               <option value="Residencial">Residencial</option>
               <option value="Comercial">Comercial</option>
               <option value="Industrial">Industrial</option>
               <option value="Rural">Rural</option>
+          </select>
+        </div>
+
+        {/* NOVO CAMPO DE GRUPO A/B */}
+        <div>
+          <label className="block text-xs font-bold text-sky-400 mb-1 flex items-center gap-1">
+              <Zap size={12} /> Grupo / Fio
+          </label>
+          <select 
+            value={data.clientGroup} 
+            onChange={(e) => onChange('clientGroup', e.target.value)}
+            className="w-full bg-slate-900 border border-sky-500/50 rounded-lg p-3 text-white font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300 appearance-none text-xs"
+          >
+              <option value="B">Grupo B (Baixa Tensão)</option>
+              <option value="A">Grupo A (Alta Tensão)</option>
           </select>
         </div>
 
@@ -304,7 +377,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
           <select 
             value={data.connectionType} 
             onChange={(e) => onChange('connectionType', e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300 appearance-none"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300 appearance-none text-xs"
           >
               <option value="Monofásico">Monofásico</option>
               <option value="Bifásico">Bifásico</option>
@@ -323,16 +396,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
             className="w-full bg-slate-900 border border-sky-500/50 rounded-lg p-3 text-white font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300"
           />
           <p className="text-[9px] text-sky-400 mt-1">Consumo Est: ~{calculatedAvgConsumption} kWh</p>
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1">Tarifa (R$/kWh)</label>
-          <input 
-            type="number" 
-            step="0.01"
-            value={data.energyTariff} 
-            onChange={(e) => onChange('energyTariff', parseFloat(e.target.value) || 0)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-green-500 focus:outline-none print:bg-white print:text-black print:border-slate-300"
-          />
         </div>
       </div>
       

@@ -3,7 +3,8 @@ export interface SolarSystemData {
   clientName?: string;
   clientPhone?: string;
   clientType: 'Residencial' | 'Comercial' | 'Industrial' | 'Rural';
-  connectionType: 'Monofásico' | 'Bifásico' | 'Trifásico'; // Novo
+  clientGroup: 'A' | 'B'; // Novo: Grupo A (Alta Tensão) ou B (Baixa Tensão)
+  connectionType: 'Monofásico' | 'Bifásico' | 'Trifásico'; 
   billAmount: number;
   energyTariff: number; 
   investmentAmount: number; 
@@ -15,8 +16,8 @@ export interface SolarSystemData {
   moduleCount: number;
   modulesPerString: number; 
   modulePowerW: number; 
-  moduleBrand?: string; // Novo
-  inverterBrand?: string; // Novo
+  moduleBrand?: string; 
+  inverterBrand?: string; 
   selectedInverter?: string; 
   roofType: 'Cerâmico' | 'Fibrocimento' | 'Metálico' | 'Laje' | 'Solo'; 
   latitude?: number;
@@ -79,6 +80,6 @@ export interface ProposalSettings {
   contactInfo: string;
   warrantyText: string;
   paymentTerms: string;
-  differentialsText: string; // Novo
+  differentialsText: string;
   validityDays: number;
 }

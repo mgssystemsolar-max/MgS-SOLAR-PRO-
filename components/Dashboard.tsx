@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Save, Printer, History, LayoutTemplate, PenTool } from 'lucide-react';
+import { Save, Printer, History, LayoutTemplate, PenTool, Trash2 } from 'lucide-react';
 import { Header } from './Header';
 import { CommercialCard } from './CommercialCard';
 import { TechnicalCard } from './TechnicalCard';
@@ -23,7 +23,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     clientName: '',
     clientPhone: '',
     clientType: 'Residencial',
-    connectionType: 'Monofásico', // Default value
+    clientGroup: 'B', // Default Group B (Low Voltage)
+    connectionType: 'Monofásico', 
     billAmount: 650,
     energyTariff: 0.95,
     investmentAmount: 18000,
@@ -35,8 +36,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     moduleCount: 8,
     modulesPerString: 8,
     modulePowerW: 575,
-    moduleBrand: '', // Default empty
-    inverterBrand: '', // Default empty
+    moduleBrand: '', 
+    inverterBrand: '', 
     selectedInverter: INVERTER_OPTIONS[0],
     roofType: 'Cerâmico',
     latitude: undefined,
@@ -71,13 +72,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   // Effects
   useEffect(() => {
-    // Load history
+    // Load history from LocalStorage on mount
     const stored = localStorage.getItem('mgs_projects');
     if (stored) {
       try {
-        setSavedProjects(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+            setSavedProjects(parsed);
+        }
       } catch (e) {
-        console.error("Failed to parse history");
+        console.error("Erro ao carregar histórico:", e);
       }
     }
   }, []);
@@ -126,27 +130,49 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   const handleSave = async () => {
     const defaultName = solarData.clientName || (solarData.address ? solarData.address.split(',')[0] : "Novo Cliente");
-    const clientName = prompt("Nome do Cliente para identificação:", defaultName);
-    if (!clientName) return;
+    const clientName = prompt("Nome do Cliente para salvar:", defaultName);
+    
+    // Se o usuário clicar em Cancelar, clientName será null
+    if (clientName === null) return; 
+
+    const finalName = clientName.trim() || "Cliente Sem Nome";
 
     const newProject: SavedProject = {
       id: Date.now().toString(),
-      clientName,
+      clientName: finalName,
       date: new Date().toISOString(),
-      data: { ...solarData, clientName }
+      data: { ...solarData, clientName: finalName } // Garante que o nome salvo no objeto de dados também seja atualizado
     };
 
     const updatedList = [newProject, ...savedProjects];
     setSavedProjects(updatedList);
-    localStorage.setItem('mgs_projects', JSON.stringify(updatedList));
     
-    alert("Projeto salvo no histórico!");
+    // Persistência Imediata
+    try {
+        localStorage.setItem('mgs_projects', JSON.stringify(updatedList));
+        alert("✅ Projeto salvo com sucesso no histórico!");
+    } catch (e) {
+        alert("Erro ao salvar no navegador. Verifique o espaço disponível.");
+        console.error(e);
+    }
+  };
+
+  const handlePrint = () => {
+      // 1. Muda para o modo proposta para garantir que o componente seja renderizado
+      setViewMode('proposal');
+
+      // 2. Aguarda um breve momento para o React atualizar o DOM antes de chamar o print
+      setTimeout(() => {
+          window.print();
+      }, 500);
   };
 
   const handleLoadProject = (proj: SavedProject) => {
     setSolarData({
         ...proj.data,
+        // Garante valores padrão caso o projeto salvo seja antigo
         clientType: proj.data.clientType || 'Residencial',
+        clientGroup: proj.data.clientGroup || 'B',
         connectionType: proj.data.connectionType || 'Monofásico',
         moduleBrand: proj.data.moduleBrand || '',
         inverterBrand: proj.data.inverterBrand || '',
@@ -158,11 +184,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         selectedInverter: proj.data.selectedInverter || INVERTER_OPTIONS[0],
         downPayment: proj.data.downPayment || (proj.data.investmentAmount * 0.3)
     });
+    // Se o projeto salvo tinha imagem (futuro), poderíamos carregar aqui.
+    setViewMode('editor'); // Volta para o editor para ver os dados carregados
     alert(`Projeto de ${proj.clientName} carregado!`);
   };
 
   const handleDeleteProject = (id: string) => {
-    if(confirm("Tem certeza que deseja excluir este projeto?")) {
+    if(confirm("Tem certeza que deseja excluir este projeto do histórico?")) {
         const updated = savedProjects.filter(p => p.id !== id);
         setSavedProjects(updated);
         localStorage.setItem('mgs_projects', JSON.stringify(updated));
@@ -194,14 +222,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
             <button 
                 onClick={() => setHistoryOpen(true)}
-                className="flex items-center gap-2 text-slate-400 hover:text-sky-400 transition-colors"
+                className="flex items-center gap-2 text-slate-400 hover:text-sky-400 transition-colors bg-slate-800 p-2 rounded-lg border border-slate-700 hover:border-sky-500"
             >
-                <History size={20} /> <span className="text-sm font-bold">Histórico</span>
+                <History size={20} /> <span className="text-sm font-bold">Histórico ({savedProjects.length})</span>
             </button>
         </div>
 
         {viewMode === 'editor' ? (
-            <div className="animate-fade-in">
+            <div className="animate-fade-in print:hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <CommercialCard 
                         data={solarData} 
@@ -250,13 +278,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         <div className="flex gap-4 print:hidden mt-6">
           <button 
             onClick={handleSave}
-            className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg"
+            className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg group"
           >
-            <Save size={20} />
-            SALVAR
+            <Save size={20} className="group-hover:text-green-400" />
+            SALVAR PROJETO
           </button>
           <button 
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="flex-1 bg-sky-500 hover:bg-sky-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg shadow-sky-900/20"
           >
             <Printer size={20} />
