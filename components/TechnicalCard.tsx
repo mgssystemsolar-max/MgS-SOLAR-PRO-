@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Zap, Camera, Ruler, Weight, Activity, Cable, Cpu, Home, Sliders } from 'lucide-react';
+import { Zap, Camera, Ruler, Weight, Activity, Cable, Cpu, Home, Sliders, Box } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculateStringSuggestion, calculateModulesFromBill, MODULE_OPTIONS, INVERTER_OPTIONS } from '../services/solarLogic';
@@ -32,7 +33,6 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
     onChange('modulePowerW', newPower);
 
     // Recalcula a quantidade de módulos com base na conta atual
-    // para garantir que a geração se mantenha (Mais potência = Menos módulos)
     if (data.billAmount > 0) {
         const newCount = calculateModulesFromBill(
             data.billAmount,
@@ -41,7 +41,6 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
             newPower
         );
         onChange('moduleCount', newCount);
-        // Atualiza a sugestão de string para a nova quantidade
         onChange('modulesPerString', calculateStringSuggestion(newCount));
     }
   };
@@ -93,6 +92,34 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
            </div>
            <p className="text-[10px] text-sky-400/80 mt-1">{specs.stringConfigText}</p>
         </div>
+      </div>
+      
+      {/* Marcas (Campos Novos) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-400 mb-1 flex items-center gap-1">
+                <Box size={12} /> Marca do Módulo
+            </label>
+            <input 
+                type="text" 
+                value={data.moduleBrand || ''}
+                onChange={(e) => onChange('moduleBrand', e.target.value)}
+                placeholder="Ex: Canadian / Jinko / Trina"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-1 focus:ring-sky-500 outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-400 mb-1 flex items-center gap-1">
+                <Cpu size={12} /> Marca do Inversor
+            </label>
+            <input 
+                type="text" 
+                value={data.inverterBrand || ''}
+                onChange={(e) => onChange('inverterBrand', e.target.value)}
+                placeholder="Ex: Growatt / Deye / Solis"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-1 focus:ring-sky-500 outline-none"
+            />
+          </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -195,7 +222,7 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
 
       <div className="print:break-inside-avoid">
         <label className="block text-xs font-bold text-slate-400 mb-2 uppercase flex items-center gap-2">
-          <Camera size={14} /> Foto da Obra
+          <Camera size={14} /> Foto da Obra (Layout)
         </label>
         
         {!imagePreview ? (

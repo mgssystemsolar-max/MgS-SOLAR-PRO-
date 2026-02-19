@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building } from 'lucide-react';
+import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculatePayback, calculateModulesFromBill, calculateStringSuggestion } from '../services/solarLogic';
@@ -23,9 +23,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
     const finalPrice = cost * (1 + margin / 100);
     const newTotal = Math.round(finalPrice);
     onChange('investmentAmount', newTotal);
-    
-    // Opcional: Ajustar Entrada Proporcionalmente (30%) se desejar manter a proporção
-    // onChange('downPayment', Math.round(newTotal * 0.3));
   };
 
   const handleMarginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +33,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
     const finalPrice = cost * (1 + margin / 100);
     const newTotal = Math.round(finalPrice);
     onChange('investmentAmount', newTotal);
-    // onChange('downPayment', Math.round(newTotal * 0.3));
   };
 
   const handleInvestmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,8 +65,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         if (results && results.length > 0) {
             const lat = parseFloat(results[0].lat);
             const lng = parseFloat(results[0].lon);
-            // const formattedAddress = results[0].display_name;
-
             updateLocationData(lat, lng);
         } else {
             alert("Endereço não encontrado.");
@@ -89,9 +83,9 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
       setLoadingLoc(true);
       
       const options = {
-        enableHighAccuracy: true, // Força uso do GPS real (não apenas IP/Wi-Fi)
-        timeout: 15000,           // Aumenta tempo limite para 15s
-        maximumAge: 0             // Não usar cache de posição anterior
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
       };
 
       navigator.geolocation.getCurrentPosition(
@@ -131,9 +125,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
   };
 
   const updateLocationData = (lat: number, lng: number) => {
-      // Lógica original: se lat > -12 (Mais ao Norte/Nordeste), HSP = 6.0, senão 5.8
       const newHsp = lat > -12 ? 6.0 : 5.8;
-      
       onChange('hsp', newHsp);
       onChange('latitude', lat);
       onChange('longitude', lng);
@@ -157,8 +149,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
       }
 
       const phone = type === 'client' ? data.clientPhone?.replace(/\D/g, '') : '';
-      
-      // If sending to client, use their phone. If sending to team, open generic whatsapp share or ask for number (using generic link here allows user to pick contact)
       const url = phone 
         ? `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`
         : `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -166,12 +156,10 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
       window.open(url, '_blank');
   };
 
-  // Cálculo automático quando a conta é alterada
   const handleBillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newBill = parseFloat(e.target.value) || 0;
       onChange('billAmount', newBill);
       
-      // Auto-calculate modules
       if (newBill > 0) {
           const suggestedModules = calculateModulesFromBill(
               newBill, 
@@ -181,7 +169,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
           );
           if (suggestedModules > 0) {
               onChange('moduleCount', suggestedModules);
-              // Cálculo Automático de String (Otimização para o Inversor)
               const suggestedString = calculateStringSuggestion(suggestedModules);
               onChange('modulesPerString', suggestedString);
           }
@@ -189,6 +176,10 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
   };
 
   const payback = calculatePayback(data.investmentAmount, data.billAmount);
+  
+  const calculatedAvgConsumption = (data.billAmount > 0 && data.energyTariff > 0) 
+    ? Math.round(data.billAmount / data.energyTariff) 
+    : 0;
 
   // Cálculos de Entrada e Restante
   const currentDownPayment = data.downPayment !== undefined ? data.downPayment : (data.investmentAmount * 0.3);
@@ -199,7 +190,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
     <Card>
       <CardHeader title="Visita Técnica & Comercial" icon={<User size={18} className="text-green-500" />} />
       
-      {/* Dados do Cliente e Visita */}
       <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 mb-6">
         <div className="flex items-center gap-2 mb-3">
             <Wrench size={16} className="text-orange-400" />
@@ -235,7 +225,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
             </div>
         </div>
 
-        {/* Botões de Ação Rápida */}
         <div className="flex gap-2 mt-2">
              <button 
                 onClick={() => handleSendToWhatsapp('client')}
@@ -256,7 +245,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
 
       <hr className="border-slate-700 mb-4" />
 
-      {/* Seção de Endereço */}
       <div className="mb-4">
         <label className="block text-xs font-bold text-slate-400 mb-1">Localizar Obra (Busca Automática)</label>
         <div className="flex gap-2">
@@ -292,8 +280,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         )}
       </div>
 
-      {/* Inputs Conta e Tarifa e Categoria */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
          <div>
           <label className="block text-xs font-bold text-slate-400 mb-1 flex items-center gap-1">
               <Building size={12} /> Categoria
@@ -310,6 +297,21 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
           </select>
         </div>
 
+        <div>
+          <label className="block text-xs font-bold text-slate-400 mb-1 flex items-center gap-1">
+              <PlugZap size={12} /> Ligação
+          </label>
+          <select 
+            value={data.connectionType} 
+            onChange={(e) => onChange('connectionType', e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300 appearance-none"
+          >
+              <option value="Monofásico">Monofásico</option>
+              <option value="Bifásico">Bifásico</option>
+              <option value="Trifásico">Trifásico</option>
+          </select>
+        </div>
+
         <div className="relative">
           <label className="block text-xs font-bold text-sky-400 mb-1 flex items-center gap-1">
               <Wand2 size={12} /> Conta Mensal (R$)
@@ -320,6 +322,7 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
             onChange={handleBillChange}
             className="w-full bg-slate-900 border border-sky-500/50 rounded-lg p-3 text-white font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none print:bg-white print:text-black print:border-slate-300"
           />
+          <p className="text-[9px] text-sky-400 mt-1">Consumo Est: ~{calculatedAvgConsumption} kWh</p>
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-400 mb-1">Tarifa (R$/kWh)</label>
@@ -381,7 +384,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
             </div>
         </div>
 
-        {/* Simulação de Pagamento (Com Entrada Editável) */}
         <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
              <div className="flex items-center gap-2 mb-2">
                 <Wallet size={12} className="text-sky-400" />
