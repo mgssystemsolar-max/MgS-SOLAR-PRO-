@@ -236,7 +236,10 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
       }
   };
 
-  const payback = calculatePayback(data.investmentAmount, data.billAmount);
+  // CÁLCULO DE PAYBACK AUTOMÁTICO
+  // Usa a Geração Média (specs) x Tarifa para saber a economia real, e não a conta fixa.
+  const estimatedMonthlySavings = specs.generationMonthlyAvg * data.energyTariff;
+  const payback = calculatePayback(data.investmentAmount, estimatedMonthlySavings);
   
   const calculatedAvgConsumption = (data.billAmount > 0 && data.energyTariff > 0) 
     ? Math.round(data.billAmount / data.energyTariff) 
@@ -521,8 +524,9 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         </div>
         <div>
             <label className="block text-xs font-bold text-slate-400 mb-1">Payback Estimado</label>
-            <div className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sky-400 font-bold flex items-center">
-                {payback}
+            <div className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sky-400 font-bold flex items-center justify-between">
+                <span>{payback}</span>
+                <span className="text-[9px] text-slate-500 font-normal">Base: Economia</span>
             </div>
         </div>
       </div>

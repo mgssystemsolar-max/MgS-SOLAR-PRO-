@@ -256,14 +256,19 @@ export const calculateProduction = (totalPowerKw: number, hsp: number): MonthlyP
   }));
 };
 
-export const calculatePayback = (investment: number, bill: number): string => {
-  if (bill <= 0) return "---";
-  const months = investment / bill;
+// PAYBACK: Agora calcula baseado na Economia Mensal Real (R$), e não só na conta.
+export const calculatePayback = (investment: number, monthlySavings: number): string => {
+  if (monthlySavings <= 0) return "---";
+  const months = investment / monthlySavings;
+  
+  if (months > 120) return "> 10 anos";
+  
   return `${months.toFixed(1)} meses`;
 };
 
-export const calculateFinancials = (data: SolarSystemData): FinancialProjection => {
-  const monthlySavings = data.billAmount; 
+// FINANCIALS: Usa a geração estimada para projetar a economia
+export const calculateFinancials = (data: SolarSystemData, monthlyGenAvg: number): FinancialProjection => {
+  const monthlySavings = monthlyGenAvg * data.energyTariff;
   const annualSavings = monthlySavings * 12;
   
   let totalSavings = 0;

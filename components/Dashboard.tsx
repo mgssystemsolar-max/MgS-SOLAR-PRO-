@@ -67,8 +67,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   // Derived State (Calculations)
   const specs = useMemo(() => calculateTechnicalSpecs(solarData), [solarData]);
   const productionData = useMemo(() => calculateProduction(specs.totalPowerKw, solarData.hsp), [specs.totalPowerKw, solarData.hsp]);
-  const payback = useMemo(() => calculatePayback(solarData.investmentAmount, solarData.billAmount), [solarData.investmentAmount, solarData.billAmount]);
-  const financials = useMemo(() => calculateFinancials(solarData), [solarData]);
+  
+  // Payback & Financials agora baseados na GERAÇÃO e TARIFA, não apenas na conta informada.
+  const estimatedMonthlySavings = specs.generationMonthlyAvg * solarData.energyTariff;
+  const payback = useMemo(() => calculatePayback(solarData.investmentAmount, estimatedMonthlySavings), [solarData.investmentAmount, estimatedMonthlySavings]);
+  const financials = useMemo(() => calculateFinancials(solarData, specs.generationMonthlyAvg), [solarData, specs.generationMonthlyAvg]);
 
   // Effects
   useEffect(() => {
