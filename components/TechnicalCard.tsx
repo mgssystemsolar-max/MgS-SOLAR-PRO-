@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Zap, Camera, Ruler, Weight, Activity, Cable, Cpu, Home, Sliders, Box } from 'lucide-react';
+import React, { useState } from 'react';
+import { Zap, Camera, Ruler, Weight, Activity, Cable, Cpu, Home, Sliders, Box, Info, X } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculateStringSuggestion, calculateModulesFromBill, MODULE_OPTIONS, INVERTER_OPTIONS } from '../services/solarLogic';
@@ -14,7 +14,8 @@ interface Props {
 }
 
 export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageChange, imagePreview }) => {
-  
+  const [showOverloadInfo, setShowOverloadInfo] = useState(false);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onImageChange(e.target.files[0]);
@@ -45,15 +46,48 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
     }
   };
 
-  const isOverloadHigh = parseInt(specs.overload) > 140;
+  const overloadValue = parseInt(specs.overload);
+  let overloadColor = "text-green-400";
+  let overloadStatus = "Ideal";
+
+  if (overloadValue < 110) {
+    overloadColor = "text-yellow-400";
+    overloadStatus = "Baixo (Subutilizado)";
+  } else if (overloadValue > 150) {
+    overloadColor = "text-red-400";
+    overloadStatus = "Alto (Risco Clipping)";
+  }
 
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader 
         title="Dimensionamento Técnico" 
         icon={<Zap size={18} className="text-sky-400" />} 
         colorClass="text-sky-400" 
       />
+
+      {/* OVERLOAD INFO MODAL/OVERLAY */}
+      {showOverloadInfo && (
+        <div className="absolute inset-0 z-50 bg-slate-900/95 p-4 rounded-xl flex flex-col overflow-y-auto animate-fade-in border border-sky-500/30">
+            <div className="flex justify-between items-start mb-2">
+                <h4 className="text-sky-400 font-bold flex items-center gap-2">
+                    <Info size={18} /> Entendendo o Overload
+                </h4>
+                <button 
+                    onClick={() => setShowOverloadInfo(false)}
+                    className="bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white"
+                >
+                    <X size={18} />
+                </button>
+            </div>
+            <div className="text-xs text-slate-300 space-y-2 leading-relaxed">
+                <p><strong className="text-white">Definição:</strong> É a relação entre a potência CC (painéis) e a potência CA (inversor). Um sistema com 13 kWp de painéis e um inversor de 10 kW tem 30% de overload (130%).</p>
+                <p><strong className="text-white">Benefícios:</strong> Aumenta o tempo de operação do inversor em sua capacidade máxima, gerando mais energia total ao longo do dia, especialmente no início da manhã e final da tarde (curva de geração mais larga).</p>
+                <p><strong className="text-white">Clipping (Achatamento):</strong> Quando a produção CC excede a capacidade do inversor, ele "corta" o pico. Isso é normal e esperado para otimizar o custo.</p>
+                <p><strong className="text-white">Objetivo:</strong> Reduzir o LCOE (Custo da Energia) e melhorar o ROI, maximizando o uso da infraestrutura sem danificar o equipamento (desde que dentro dos limites do fabricante, geralmente até 50%).</p>
+            </div>
+        </div>
+      )}
       
       {/* Entradas Principais */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -169,15 +203,27 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
         <div className="text-lg font-black text-white leading-tight mb-1">
             {specs.suggestedInverter}
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
+        <div className="flex items-center gap-3 text-xs text-slate-400 mt-2">
             <span>Nominal: <b>{specs.inverterPowerKw} kW</b></span>
             <span>•</span>
-            <span className={`${isOverloadHigh ? 'text-orange-400 font-bold' : 'text-green-400'}`}>
-                Overload: {specs.overload}
-            </span>
+            <div className="flex items-center gap-1">
+                <span className={`${overloadColor} font-bold`}>
+                    Overload: {specs.overload}
+                </span>
+                <button 
+                    onClick={() => setShowOverloadInfo(!showOverloadInfo)}
+                    className="text-slate-500 hover:text-white transition-colors"
+                    title="O que é Overload?"
+                >
+                    <Info size={14} />
+                </button>
+            </div>
              <span>•</span>
             <span className="text-sky-300 font-bold">In: {specs.nominalCurrent} A</span>
         </div>
+        <p className={`text-[9px] mt-1 ${overloadColor} opacity-80 font-bold uppercase`}>
+            Status: {overloadStatus}
+        </p>
       </div>
 
       {/* Detalhes Técnicos Grid */}

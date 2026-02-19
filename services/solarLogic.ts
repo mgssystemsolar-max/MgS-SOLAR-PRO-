@@ -1,3 +1,4 @@
+
 import { SolarSystemData, TechnicalSpecs, MonthlyProduction, ChecklistItem, FinancialProjection } from '../types';
 
 // Lista de Módulos Fotovoltaicos Disponíveis
@@ -118,17 +119,27 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
       suggestedInverter = data.selectedInverter!;
   } else {
       // Automatic Logic
+      // Lista de inversores padrão
       const STANDARD_INVERTERS = [
         1, 1.5, 2, 2.5, 3, 3.6, 4, 5, 6, 7, 8, 9, 10, 
         12, 15, 20, 25, 30, 33, 40, 50, 60, 75, 100
       ];
 
+      // Sobredimensionamento (Overload)
+      // Tenta encontrar um inversor onde a relação DC/AC seja <= 1.50 (50% overload)
+      // Isso maximiza o uso do inversor e melhora o LCOE.
+      const MAX_OVERLOAD_RATIO = 1.50; 
+
+      // Encontra o menor inversor que suporta a potência dentro do limite de overload
+      // Como a lista está ordenada crescente, find retorna o menor possível.
       const foundInverter = STANDARD_INVERTERS.find(invKw => {
          const ratio = totalPowerKw / invKw;
-         return ratio <= 1.45;
+         return ratio <= MAX_OVERLOAD_RATIO;
       });
 
       selectedInverterKw = foundInverter || STANDARD_INVERTERS[STANDARD_INVERTERS.length - 1];
+      
+      // Regra básica para trifásico vs monofásico baseada na potência
       isThreePhase = selectedInverterKw >= 8;
       suggestedInverter = `Inversor ${selectedInverterKw}kW (${isThreePhase ? 'Trifásico 380V' : 'Mono/Bifásico 220V'})`;
   }
@@ -158,9 +169,11 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
       nominalCurrent = (inverterPowerKw * 1000) / systemVoltage;
   }
 
+  // Dimensionamento de Cabos e Disjuntores
+  // Fatores de agrupamento e temperatura simplificados para estimativa
   let cableGauge = "2.5mm²";
   let breakerRating = "16A";
-  const designCurrent = nominalCurrent * 1.25;
+  const designCurrent = nominalCurrent * 1.25; // 25% margem de segurança
 
   if (designCurrent <= 21) {
       cableGauge = "2.5mm²";
