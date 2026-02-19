@@ -50,12 +50,12 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
   let overloadColor = "text-green-400";
   let overloadStatus = "Ideal";
 
-  if (overloadValue < 110) {
+  if (overloadValue < 105) {
     overloadColor = "text-yellow-400";
     overloadStatus = "Baixo (Subutilizado)";
-  } else if (overloadValue > 150) {
-    overloadColor = "text-red-400";
-    overloadStatus = "Alto (Risco Clipping)";
+  } else if (overloadValue > 130) {
+    overloadColor = "text-red-500 animate-pulse";
+    overloadStatus = "PERIGO (Alto Risco)";
   }
 
   return (
@@ -82,9 +82,9 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
             </div>
             <div className="text-xs text-slate-300 space-y-2 leading-relaxed">
                 <p><strong className="text-white">Definição:</strong> É a relação entre a potência CC (painéis) e a potência CA (inversor). Um sistema com 13 kWp de painéis e um inversor de 10 kW tem 30% de overload (130%).</p>
-                <p><strong className="text-white">Benefícios:</strong> Aumenta o tempo de operação do inversor em sua capacidade máxima, gerando mais energia total ao longo do dia, especialmente no início da manhã e final da tarde (curva de geração mais larga).</p>
-                <p><strong className="text-white">Clipping (Achatamento):</strong> Quando a produção CC excede a capacidade do inversor, ele "corta" o pico. Isso é normal e esperado para otimizar o custo.</p>
-                <p><strong className="text-white">Objetivo:</strong> Reduzir o LCOE (Custo da Energia) e melhorar o ROI, maximizando o uso da infraestrutura sem danificar o equipamento (desde que dentro dos limites do fabricante, geralmente até 50%).</p>
+                <p><strong className="text-white">Limite Seguro:</strong> Recomenda-se trabalhar com no máximo <strong>130%</strong>. Acima disso, há perda de garantia e risco de danos por superaquecimento.</p>
+                <p><strong className="text-white">Clipping (Achatamento):</strong> Quando a produção CC excede a capacidade do inversor, ele "corta" o pico. Isso é normal até certo ponto para otimizar custos.</p>
+                <p><strong className="text-white">Objetivo:</strong> Reduzir o LCOE (Custo da Energia) maximizando o uso da infraestrutura sem danificar o equipamento.</p>
             </div>
         </div>
       )}

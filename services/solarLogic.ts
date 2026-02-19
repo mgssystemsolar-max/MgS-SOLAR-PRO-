@@ -126,9 +126,9 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
       ];
 
       // Sobredimensionamento (Overload)
-      // Tenta encontrar um inversor onde a relação DC/AC seja <= 1.50 (50% overload)
-      // Isso maximiza o uso do inversor e melhora o LCOE.
-      const MAX_OVERLOAD_RATIO = 1.50; 
+      // AJUSTE DE SEGURANÇA: Limite reduzido de 1.50 (150%) para 1.30 (130%)
+      // Isso força a escolha de inversores maiores para evitar clipping excessivo e perigo.
+      const MAX_OVERLOAD_RATIO = 1.30; 
 
       // Encontra o menor inversor que suporta a potência dentro do limite de overload
       // Como a lista está ordenada crescente, find retorna o menor possível.
@@ -148,8 +148,8 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
   const systemVoltage = isThreePhase ? 380 : 220; 
 
   // Range text for reference
-  const inverterMin = (totalPowerKw / 1.5).toFixed(1);
-  const inverterMax = (totalPowerKw / 1.15).toFixed(1); 
+  const inverterMin = (totalPowerKw / 1.3).toFixed(1); // Ajustado range display
+  const inverterMax = (totalPowerKw / 1.1).toFixed(1); 
   const inverterRange = `${inverterMin}kW - ${inverterMax}kW`;
   
   // Calculate actual overload
