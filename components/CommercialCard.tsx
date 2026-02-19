@@ -86,14 +86,31 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
 
   // Busca coordenadas usando OpenStreetMap (Nominatim)
   const handleAddressSearch = async () => {
-    if (!data.address || data.address.length < 5) {
+    const addr = data.address || '';
+    if (addr.length < 3) {
         alert("Digite um endereço válido para buscar.");
         return;
     }
 
+    // 1. Tenta identificar coordenadas manuais (Lat, Lng) para evitar chamada de API desnecessária e erros de "Not Found"
+    // Suporta: "-23.5, -46.6" ou "Lat: -23.5, Lng: -46.6"
+    const coordRegex = /(-?\d+\.\d+)[,\s]+(?:Lng:\s*|Longitude:\s*)?(-?\d+\.\d+)/i;
+    const match = addr.match(coordRegex);
+    
+    if (match) {
+        const lat = parseFloat(match[1]);
+        const lng = parseFloat(match[2]);
+        
+        // Validação simples de range
+        if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            updateLocationData(lat, lng);
+            return; // Sucesso local, não chama API
+        }
+    }
+
     setLoadingLoc(true);
     try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.address)}&limit=1`, {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`, {
             headers: { 'Accept-Language': 'pt-BR' }
         });
         
@@ -106,11 +123,11 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
             const lng = parseFloat(results[0].lon);
             updateLocationData(lat, lng);
         } else {
-            alert("Endereço não encontrado.");
+            alert("Endereço não encontrado. Tente 'Cidade, Estado' ou use coordenadas.");
         }
     } catch (error) {
-        console.warn("Erro na busca de endereço:", error);
-        alert("Erro ao buscar endereço. Verifique sua conexão.");
+        console.log("Erro na busca de endereço (API Indisponível):", error);
+        alert("Serviço de mapas indisponível no momento.\n\nDica: Você pode digitar as coordenadas manualmente no campo (Ex: -23.55, -46.63).");
     } finally {
         setLoadingLoc(false);
     }
@@ -160,8 +177,8 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
                   onChange('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
               }
           } catch (e) {
-              console.warn("Geocoding reverso indisponível (offline ou bloqueio):", e);
-              // Fallback se falhar API - Mostra coordenadas de forma limpa
+              console.log("Modo Offline/Erro API: Usando coordenadas brutas.");
+              // Fallback se falhar API - Mostra coordenadas de forma limpa para que a busca manual funcione
               onChange('address', `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
           }
           

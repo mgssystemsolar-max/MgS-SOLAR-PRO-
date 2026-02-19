@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BarChart as BarChartIcon, Sun, Calendar, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -25,7 +26,7 @@ export const ProductionChart: React.FC<Props> = ({ data, totalPowerKw }) => {
       </div>
       
       {/* Chart */}
-      <div className="h-56 w-full mb-6">
+      <div className="h-56 w-full mb-6" style={{ minHeight: '224px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <XAxis 
