@@ -13,7 +13,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check for existing session (Simulated)
-    const storedUser = localStorage.getItem('mgs_user');
+    // Prioritize localStorage (Remember Me), then sessionStorage
+    const storedUser = localStorage.getItem('mgs_user') || sessionStorage.getItem('mgs_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -21,15 +22,21 @@ const App: React.FC = () => {
     setTimeout(() => setLoading(false), 800);
   }, []);
 
-  const handleLogin = (email: string) => {
+  const handleLogin = (email: string, remember: boolean) => {
     const newUser = { email };
     setUser(newUser);
-    localStorage.setItem('mgs_user', JSON.stringify(newUser));
+    
+    if (remember) {
+      localStorage.setItem('mgs_user', JSON.stringify(newUser));
+    } else {
+      sessionStorage.setItem('mgs_user', JSON.stringify(newUser));
+    }
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('mgs_user');
+    sessionStorage.removeItem('mgs_user');
   };
 
   if (loading) {

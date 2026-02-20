@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Eye, EyeOff, Mail, Lock, ArrowLeft, UserPlus, KeyRound, Check, Sun } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, remember: boolean) => void;
 }
 
 type AuthMode = 'login' | 'register' | 'recovery';
@@ -55,13 +55,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 return;
             }
             // Sucesso no cadastro, faz login automático
-            onLogin(email);
+            onLogin(email, true);
             return;
         }
 
         // Mode: Login
         if (email && password) {
-            onLogin(email);
+            onLogin(email, rememberMe);
         } else {
             setError("Preencha e-mail e senha.");
             setIsLoading(false);
