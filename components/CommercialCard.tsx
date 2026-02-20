@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap, UploadCloud, FileText, ScanLine, Crosshair } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap, UploadCloud, FileText, ScanLine, Crosshair, History, Clock } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculatePayback, calculateModulesFromBill, calculateStringSuggestion } from '../services/solarLogic';
@@ -11,9 +11,60 @@ interface Props {
   specs: TechnicalSpecs;
 }
 
+interface RecentLocation {
+    address: string;
+    lat: number;
+    lng: number;
+    timestamp: number;
+}
+
 export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
   const [loadingLoc, setLoadingLoc] = useState(false);
   const [isReadingBill, setIsReadingBill] = useState(false);
+  
+  // Recent Locations State
+  const [recentLocations, setRecentLocations] = useState<RecentLocation[]>([]);
+  const [showRecent, setShowRecent] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+      const stored = localStorage.getItem('mgs_recent_locations');
+      if (stored) {
+          try {
+              setRecentLocations(JSON.parse(stored));
+          } catch (e) {
+              console.error("Erro ao carregar locais recentes", e);
+          }
+      }
+
+      // Click outside listener to close dropdown
+      const handleClickOutside = (event: MouseEvent) => {
+          if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+              setShowRecent(false);
+          }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const saveRecentLocation = (address: string, lat: number, lng: number) => {
+      const newLoc: RecentLocation = { address, lat, lng, timestamp: Date.now() };
+      
+      setRecentLocations(prev => {
+          // Remove duplicates (by address or close coordinates)
+          const filtered = prev.filter(p => p.address !== address);
+          // Add new at top, limit to 5
+          const updated = [newLoc, ...filtered].slice(0, 5);
+          localStorage.setItem('mgs_recent_locations', JSON.stringify(updated));
+          return updated;
+      });
+  };
+
+  const selectRecentLocation = (loc: RecentLocation) => {
+      onChange('address', loc.address);
+      updateLocationData(loc.lat, loc.lng, false); // false to not save again immediately
+      setShowRecent(false);
+  };
 
   // Handlers para cálculo financeiro
   const handleCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,6 +172,10 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
         if (results && results.length > 0) {
             const lat = parseFloat(results[0].lat);
             const lng = parseFloat(results[0].lon);
+            const displayName = results[0].display_name;
+            
+            // Atualiza endereço com o nome oficial retornado (opcional, mas bom para padronizar)
+            onChange('address', displayName);
             updateLocationData(lat, lng);
         } else {
             alert("Endereço não encontrado. Tente 'Cidade, Estado' ou use coordenadas.");
@@ -150,8 +205,6 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           
-          updateLocationData(lat, lng);
-
           // Reverse Geocoding com OpenStreetMap
           try {
               // Zoom 18 foca em número/rua. Addressdetails traz metadados.
@@ -168,14 +221,20 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
               }
 
               const result = await response.json();
+              let finalAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+              
               if (result && result.display_name) {
-                  onChange('address', result.display_name);
-              } else {
-                  onChange('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                  finalAddress = result.display_name;
               }
+              
+              onChange('address', finalAddress);
+              updateLocationData(lat, lng, true, finalAddress);
+
           } catch (e) {
               // Fallback se falhar API - Mostra coordenadas de forma limpa para que a busca manual funcione
-              onChange('address', `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
+              const fallbackAddr = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+              onChange('address', fallbackAddr);
+              updateLocationData(lat, lng, true, fallbackAddr);
           }
           
           setLoadingLoc(false);
@@ -198,11 +257,16 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
     }
   };
 
-  const updateLocationData = (lat: number, lng: number) => {
+  const updateLocationData = (lat: number, lng: number, saveHistory = true, addressToSave?: string) => {
       const newHsp = lat > -12 ? 6.0 : 5.8;
       onChange('hsp', newHsp);
       onChange('latitude', lat);
       onChange('longitude', lng);
+      
+      if (saveHistory) {
+          const addr = addressToSave || data.address || `${lat}, ${lng}`;
+          saveRecentLocation(addr, lat, lng);
+      }
   };
 
   const handleSendToWhatsapp = (type: 'client' | 'team') => {
@@ -346,17 +410,54 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
 
       <hr className="border-slate-700 mb-4" />
 
-      <div className="mb-4">
-        <label className="block text-xs font-bold text-slate-400 mb-1">Localizar Obra (Busca Automática)</label>
-        <div className="flex gap-2">
+      <div className="mb-4" ref={searchContainerRef}>
+        <div className="flex justify-between items-center mb-1">
+            <label className="block text-xs font-bold text-slate-400">Localizar Obra (Busca Automática)</label>
+            {recentLocations.length > 0 && (
+                <button 
+                    onClick={() => setShowRecent(!showRecent)}
+                    className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1"
+                >
+                    <History size={10} /> Últimos Locais
+                </button>
+            )}
+        </div>
+        
+        <div className="flex gap-2 relative">
             <input 
                 type="text" 
                 value={data.address || ''}
                 onChange={(e) => onChange('address', e.target.value)}
+                onFocus={() => recentLocations.length > 0 && setShowRecent(true)}
                 placeholder="Endereço, Cidade ou CEP..."
                 className="flex-1 bg-slate-900 border border-slate-600 rounded-lg p-3 text-white text-sm focus:ring-2 focus:ring-sky-500 outline-none print:bg-white print:text-black print:border-slate-300"
                 onKeyDown={(e) => e.key === 'Enter' && handleAddressSearch()}
             />
+            
+            {/* Recent Locations Dropdown */}
+            {showRecent && recentLocations.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden animate-fade-in">
+                    <div className="p-2 bg-slate-900/50 border-b border-slate-700 text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1">
+                        <Clock size={10} /> Recentes
+                    </div>
+                    <ul>
+                        {recentLocations.map((loc, idx) => (
+                            <li 
+                                key={idx}
+                                onClick={() => selectRecentLocation(loc)}
+                                className="p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50 last:border-none flex items-start gap-2"
+                            >
+                                <MapPin size={14} className="text-sky-500 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-white font-medium line-clamp-1">{loc.address}</p>
+                                    <p className="text-[10px] text-slate-500">{new Date(loc.timestamp).toLocaleDateString()} - {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             <button 
                 onClick={handleAddressSearch}
                 disabled={loadingLoc}
