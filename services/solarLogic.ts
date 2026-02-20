@@ -224,6 +224,8 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
   }
 
   // 5. Generation Totals Calculation
+  // Monthly generation factors based on regional seasonality (e.g., South/Southeast Brazil)
+  // TODO: Make this dynamic based on latitude if possible
   const months = [1, 0.9, 0.8, 0.8, 0.9, 1, 1.1, 1.2, 1.1, 1, 1, 1];
   const totalYearlyGen = months.reduce((acc, factor) => acc + (totalPowerKw * data.hsp * factor * 30), 0);
   
@@ -247,6 +249,7 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
 
 export const calculateProduction = (totalPowerKw: number, hsp: number): MonthlyProduction[] => {
   const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+  // Seasonal factors for generation estimation
   const factors = [1, 0.9, 0.8, 0.8, 0.9, 1, 1.1, 1.2, 1.1, 1, 1, 1];
   const DAYS_IN_MONTH = 30.4; // Average days
 

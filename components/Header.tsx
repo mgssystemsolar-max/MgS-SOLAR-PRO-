@@ -1,5 +1,5 @@
-import React from 'react';
-import { LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { LogOut, Sun } from 'lucide-react';
 
 interface HeaderProps {
   onLogout: () => void;
@@ -7,12 +7,22 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onLogout, userEmail }) => {
+  const [logoError, setLogoError] = useState(false);
+
   return (
     <header className="flex justify-between items-center mb-8 pb-4 border-b border-green-600 print:mb-4 print:pb-2">
       <div className="flex items-center gap-4">
-        <div className="bg-white p-1 rounded-lg print:hidden shadow-lg shadow-green-500/20">
-            {/* Ensure logo.png is in your public folder */}
-            <img src="logo.png" alt="MGS Logo" className="h-12 w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+        <div className="bg-white p-1 rounded-lg print:hidden shadow-lg shadow-green-500/20 flex items-center justify-center w-14 h-14">
+            {!logoError ? (
+                <img 
+                    src="logo.png" 
+                    alt="MGS Logo" 
+                    className="h-12 w-auto object-contain" 
+                    onError={() => setLogoError(true)} 
+                />
+            ) : (
+                <Sun size={32} className="text-orange-500" />
+            )}
         </div>
         <div>
           <h1 className="text-2xl font-bold text-green-500 m-0 leading-tight print:text-black print:text-xl">MGS SYSTEM SOLAR</h1>

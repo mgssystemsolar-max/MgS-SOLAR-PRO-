@@ -7,7 +7,7 @@ import { calculateStringSuggestion, calculateModulesFromBill, MODULE_OPTIONS, IN
 
 interface Props {
   data: SolarSystemData;
-  onChange: (field: keyof SolarSystemData, value: any) => void;
+  onChange: (field: keyof SolarSystemData, value: number | string) => void;
   specs: TechnicalSpecs;
   onImageChange: (file: File | null) => void;
   imagePreview: string | null;

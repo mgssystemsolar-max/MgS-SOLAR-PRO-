@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Save, Printer, History, LayoutTemplate, PenTool, Trash2 } from 'lucide-react';
+import { Save, Printer, History, LayoutTemplate, PenTool, Trash2, X } from 'lucide-react';
 import { Header } from './Header';
 import { CommercialCard } from './CommercialCard';
 import { TechnicalCard } from './TechnicalCard';
@@ -49,6 +49,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [viewMode, setViewMode] = useState<'editor' | 'proposal'>('editor');
   
+  // Save Modal State
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [projectName, setProjectName] = useState('');
+
   // Proposal Settings State (Editable)
   const [proposalSettings, setProposalSettings] = useState<ProposalSettings>({
     companyName: 'MGS SYSTEM SOLAR',
@@ -131,14 +135,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setChecklist(prev => prev.map(item => item.id === id ? { ...item, label: label } : item));
   };
 
-  const handleSave = async () => {
+  const openSaveModal = () => {
     const defaultName = solarData.clientName || (solarData.address ? solarData.address.split(',')[0] : "Novo Cliente");
-    const clientName = prompt("Nome do Cliente para salvar:", defaultName);
-    
-    // Se o usuário clicar em Cancelar, clientName será null
-    if (clientName === null) return; 
+    setProjectName(defaultName);
+    setSaveModalOpen(true);
+  };
 
-    const finalName = clientName.trim() || "Cliente Sem Nome";
+  const confirmSaveProject = () => {
+    const finalName = projectName.trim() || "Cliente Sem Nome";
 
     const newProject: SavedProject = {
       id: Date.now().toString(),
@@ -153,11 +157,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     // Persistência Imediata
     try {
         localStorage.setItem('mgs_projects', JSON.stringify(updatedList));
-        alert("✅ Projeto salvo com sucesso no histórico!");
+        // alert("✅ Projeto salvo com sucesso no histórico!"); // Removed alert for better UX
     } catch (e) {
         alert("Erro ao salvar no navegador. Verifique o espaço disponível.");
         console.error(e);
     }
+    setSaveModalOpen(false);
   };
 
   const handlePrint = () => {
@@ -189,7 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     });
     // Se o projeto salvo tinha imagem (futuro), poderíamos carregar aqui.
     setViewMode('editor'); // Volta para o editor para ver os dados carregados
-    alert(`Projeto de ${proj.clientName} carregado!`);
+    // alert(`Projeto de ${proj.clientName} carregado!`); // Removed alert
   };
 
   const handleDeleteProject = (id: string) => {
@@ -280,7 +285,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
         <div className="flex gap-4 print:hidden mt-6">
           <button 
-            onClick={handleSave}
+            onClick={openSaveModal}
             className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg group"
           >
             <Save size={20} className="group-hover:text-green-400" />
@@ -304,6 +309,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         onLoad={handleLoadProject}
         onDelete={handleDeleteProject}
       />
+
+      {/* Save Project Modal */}
+      {saveModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl flex flex-col relative animate-scale-in">
+                <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800/50 rounded-t-2xl">
+                    <h2 className="text-lg font-bold text-white">Salvar Projeto</h2>
+                    <button onClick={() => setSaveModalOpen(false)} className="p-1 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="p-6">
+                    <label className="block text-sm font-bold text-slate-400 mb-2">Nome do Cliente / Projeto</label>
+                    <input 
+                        type="text" 
+                        value={projectName}
+                        onChange={(e) => setProjectName(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-green-500 outline-none mb-6"
+                        placeholder="Ex: João Silva - Residência"
+                        autoFocus
+                    />
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setSaveModalOpen(false)}
+                            className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            onClick={confirmSaveProject}
+                            className="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-bold transition-colors shadow-lg shadow-green-900/20"
+                        >
+                            Salvar Agora
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

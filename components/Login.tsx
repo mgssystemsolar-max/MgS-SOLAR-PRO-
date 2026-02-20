@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, Eye, EyeOff, Mail, Lock, ArrowLeft, UserPlus, KeyRound, Check } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Mail, Lock, ArrowLeft, UserPlus, KeyRound, Check, Sun } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (email: string) => void;
@@ -20,6 +20,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,8 +84,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-sky-500/10 rounded-full blur-[100px]" />
 
       <div className="z-10 flex flex-col items-center mb-8 animate-fade-in-down text-center">
-        <div className="bg-white p-4 rounded-2xl shadow-xl shadow-green-500/20 mb-6">
-            <img src="logo.png" alt="MGS Logo" className="h-20 w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+        <div className="bg-white p-4 rounded-2xl shadow-xl shadow-green-500/20 mb-6 flex items-center justify-center">
+            {!logoError ? (
+                <img 
+                    src="logo.png" 
+                    alt="MGS Logo" 
+                    className="h-20 w-auto object-contain" 
+                    onError={() => setLogoError(true)} 
+                />
+            ) : (
+                <Sun size={64} className="text-orange-500" />
+            )}
         </div>
         <h1 className="text-3xl font-bold text-white tracking-tight">MGS SOLAR PRO <span className="text-2xl">👊</span></h1>
         <p className="text-slate-400 mt-2">Sistema de Gestão Fotovoltaica</p>
