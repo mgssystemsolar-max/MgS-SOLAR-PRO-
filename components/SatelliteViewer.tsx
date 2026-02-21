@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers } from 'lucide-react';
+import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers, BarChart2 } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -24,6 +25,15 @@ interface Props {
   lng?: number;
 }
 
+// Dados fictícios para o gráfico de telemetria (Exemplo do usuário)
+const telemetryData = [
+  { time: '10:00', altitude: 400 },
+  { time: '10:05', altitude: 405 },
+  { time: '10:10', altitude: 398 },
+  { time: '10:15', altitude: 410 },
+  { time: '10:20', altitude: 420 },
+];
+
 // Component to update map view when props change
 const MapUpdater: React.FC<{ lat: number, lng: number }> = ({ lat, lng }) => {
   const map = useMap();
@@ -37,6 +47,8 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
+  const [viewMode, setViewMode] = useState<'map' | 'chart'>('map'); // Fixed: viewMode state
+  
   const [containerReady, setContainerReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -63,11 +75,11 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
     const map = useMap();
     useEffect(() => {
       map.invalidateSize();
-    }, [isFullscreen, containerReady, map]);
+    }, [isFullscreen, containerReady, map, viewMode]);
     return null;
   };
 
-  // Renderização do Mapa extraída para evitar re-declaração e reload do iframe
+  // Renderização do Mapa
   const renderMapContent = () => {
     if (!containerReady) return null;
     
@@ -118,7 +130,29 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             </button>
         </div>
     </div>
-    );
+  );
+  };
+
+  const renderChartContent = () => {
+      // Ensure container has height for ResponsiveContainer
+      if (!containerReady) return null;
+
+      return (
+        <div className="w-full h-full bg-slate-50 p-4 rounded-lg">
+            <h3 className="text-center text-slate-700 font-bold mb-2">📊 Altitude do Satélite (km)</h3>
+            <div className="w-full h-[90%]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={telemetryData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="time" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="altitude" stroke="#8884d8" strokeWidth={3} />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+      );
   };
 
   const renderPlaceholder = () => (
@@ -160,7 +194,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
           </div>
         </div>
         <div className="flex-1 relative bg-black">
-             {hasLocation ? renderMapContent() : renderPlaceholder()}
+             {hasLocation ? (viewMode === 'map' ? renderMapContent() : renderChartContent()) : renderPlaceholder()}
         </div>
       </div>
     );
@@ -177,6 +211,24 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
         />
         {hasLocation && (
              <div className="flex gap-2">
+                {/* Toggle View Mode */}
+                <div className="flex bg-slate-800 rounded-md p-1 border border-slate-700 mr-2">
+                    <button
+                        onClick={() => setViewMode('map')}
+                        className={`p-1.5 rounded transition-colors ${viewMode === 'map' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                        title="Ver Mapa"
+                    >
+                        <MapIcon size={16} />
+                    </button>
+                    <button
+                        onClick={() => setViewMode('chart')}
+                        className={`p-1.5 rounded transition-colors ${viewMode === 'chart' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                        title="Ver Gráfico"
+                    >
+                        <BarChart2 size={16} />
+                    </button>
+                </div>
+
                 <button 
                     onClick={() => setShowGrid(!showGrid)}
                     className={`p-1.5 rounded-md transition-colors ${showGrid ? 'bg-sky-500/20 text-sky-400' : 'text-slate-500 hover:text-white hover:bg-slate-700'}`}
@@ -199,10 +251,10 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
         ref={containerRef}
         className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden border border-slate-700 shadow-inner"
       >
-         {hasLocation ? renderMapContent() : renderPlaceholder()}
+         {hasLocation ? (viewMode === 'map' ? renderMapContent() : renderChartContent()) : renderPlaceholder()}
       </div>
       
-      {hasLocation && (
+      {hasLocation && viewMode === 'map' && (
         <div className="mt-3 flex gap-2 items-start bg-yellow-500/10 p-2 rounded border border-yellow-500/20">
             <Compass size={14} className="text-yellow-500 mt-0.5 flex-shrink-0" />
             <p className="text-[10px] text-yellow-500/80 leading-tight">
