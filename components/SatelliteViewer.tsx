@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
@@ -37,9 +37,41 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
+  const [containerReady, setContainerReady] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          setContainerReady(true);
+        }
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Force map resize when entering/exiting fullscreen or when container becomes ready
+  const MapResizer = () => {
+    const map = useMap();
+    useEffect(() => {
+      map.invalidateSize();
+    }, [isFullscreen, containerReady, map]);
+    return null;
+  };
 
   // Renderização do Mapa extraída para evitar re-declaração e reload do iframe
-  const renderMapContent = () => (
+  const renderMapContent = () => {
+    if (!containerReady) return null;
+    
+    return (
     <div className="relative w-full h-full bg-slate-900 z-0">
          <MapContainer 
             center={[lat!, lng!]} 
@@ -48,6 +80,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             scrollWheelZoom={true}
             attributionControl={false}
          >
+            <MapResizer />
             {mapType === 'satellite' ? (
                 <TileLayer
                     url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -85,7 +118,8 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             </button>
         </div>
     </div>
-  );
+    );
+  };
 
   const renderPlaceholder = () => (
     <div className="flex flex-col items-center justify-center h-64 bg-slate-900/50 text-center p-6 border border-slate-700 rounded-lg">
@@ -161,7 +195,10 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
         )}
       </div>
       
-      <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden border border-slate-700 shadow-inner">
+      <div 
+        ref={containerRef}
+        className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden border border-slate-700 shadow-inner"
+      >
          {hasLocation ? renderMapContent() : renderPlaceholder()}
       </div>
       
