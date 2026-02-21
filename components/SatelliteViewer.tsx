@@ -1,11 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers, BarChart2 } from 'lucide-react';
+import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers, BarChart2, Sun } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, SVGOverlay } from 'react-leaflet';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { contours } from 'd3-contour';
+import { scaleLinear } from 'd3-scale';
+import { geoPath } from 'd3-geo';
 
 // Fix Leaflet default icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -43,11 +46,100 @@ const MapUpdater: React.FC<{ lat: number, lng: number }> = ({ lat, lng }) => {
   return null;
 };
 
+// Component to render Solar Irradiance Contours
+const SolarContours: React.FC<{ lat: number, lng: number, show: boolean }> = ({ lat, lng, show }) => {
+    const map = useMap();
+    const [paths, setPaths] = useState<JSX.Element[]>([]);
+    const [bounds, setBounds] = useState<L.LatLngBoundsExpression | null>(null);
+
+    useEffect(() => {
+        if (!show) {
+            setPaths([]);
+            return;
+        }
+
+        // 1. Define grid dimensions relative to map view
+        // We want a grid that covers the immediate area around the marker
+        // Approx 100x100 meters box
+        const size = 100; // grid resolution (width/height)
+        const range = 0.001; // approx 111 meters
+        
+        const north = lat + range;
+        const south = lat - range;
+        const east = lng + range;
+        const west = lng - range;
+
+        setBounds([[south, west], [north, east]]);
+
+        // 2. Generate synthetic solar data (Gaussian distribution centered on roof)
+        // In a real app, this would come from an API like Google Solar API
+        const values = new Array(size * size).fill(0).map((_, i) => {
+            const x = i % size;
+            const y = Math.floor(i / size);
+            
+            // Center of grid
+            const cx = size / 2;
+            const cy = size / 2;
+            
+            // Distance from center
+            const dist = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
+            
+            // Gaussian falloff + some random noise to simulate clouds/shadows
+            const maxIrradiance = 1000; // W/m2
+            const val = maxIrradiance * Math.exp(- (dist * dist) / (2 * (size/4) * (size/4)));
+            return Math.max(0, val + (Math.random() * 50 - 25));
+        });
+
+        // 3. Generate contours using d3-contour
+        const thresholds = [200, 400, 600, 800]; // Irradiance levels
+        const contourGenerator = contours().size([size, size]).thresholds(thresholds);
+        const contourData = contourGenerator(values);
+
+        // 4. Color scale
+        const colorScale = scaleLinear<string>()
+            .domain([200, 800])
+            .range(["#fde047", "#ef4444"]); // Yellow to Red
+
+        // 5. Convert contours to SVG paths
+        // We need to scale the path coordinates (0..size) to the SVG viewbox (0..size)
+        // The SVGOverlay in Leaflet will then stretch this viewbox to fit the LatLngBounds
+        const pathGenerator = geoPath();
+        
+        const newPaths = contourData.map((contour, i) => {
+            const d = pathGenerator(contour);
+            if (!d) return null;
+            
+            return (
+                <path 
+                    key={i} 
+                    d={d} 
+                    fill={colorScale(contour.value)} 
+                    fillOpacity={0.4} 
+                    stroke={colorScale(contour.value)} 
+                    strokeWidth={0.5} 
+                />
+            );
+        }).filter(Boolean) as JSX.Element[];
+
+        setPaths(newPaths);
+
+    }, [lat, lng, show]);
+
+    if (!show || !bounds) return null;
+
+    return (
+        <SVGOverlay attributes={{ viewBox: "0 0 100 100" }} bounds={bounds}>
+            {paths}
+        </SVGOverlay>
+    );
+};
+
 export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
+  const [showContours, setShowContours] = useState(false);
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
-  const [viewMode, setViewMode] = useState<'map' | 'chart'>('map'); // Fixed: viewMode state
+  const [viewMode, setViewMode] = useState<'map' | 'chart'>('map'); 
   
   const [containerReady, setContainerReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,6 +199,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             )}
             
             <Marker position={[lat!, lng!]} />
+            <SolarContours lat={lat!} lng={lng!} show={showContours} />
             <MapUpdater lat={lat!} lng={lng!} />
          </MapContainer>
          
@@ -119,14 +212,21 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             }}
         />
 
-        {/* Map Type Toggle */}
-        <div className="absolute bottom-4 left-4 z-[400] flex gap-2">
+        {/* Map Controls */}
+        <div className="absolute bottom-4 left-4 z-[400] flex flex-col gap-2">
             <button 
                 onClick={() => setMapType(mapType === 'satellite' ? 'street' : 'satellite')}
-                className="bg-slate-800/90 hover:bg-slate-700 text-white p-2 rounded-lg shadow-lg border border-slate-600 text-xs font-bold flex items-center gap-2"
+                className="bg-slate-800/90 hover:bg-slate-700 text-white p-2 rounded-lg shadow-lg border border-slate-600 text-xs font-bold flex items-center gap-2 w-full justify-center"
             >
                 <Layers size={14} />
-                {mapType === 'satellite' ? 'Mudar p/ Mapa' : 'Mudar p/ Satélite'}
+                {mapType === 'satellite' ? 'Mapa' : 'Satélite'}
+            </button>
+            <button 
+                onClick={() => setShowContours(!showContours)}
+                className={`p-2 rounded-lg shadow-lg border border-slate-600 text-xs font-bold flex items-center gap-2 w-full justify-center transition-colors ${showContours ? 'bg-yellow-500 text-black border-yellow-600' : 'bg-slate-800/90 text-white hover:bg-slate-700'}`}
+            >
+                <Sun size={14} />
+                Irradiação
             </button>
         </div>
     </div>
