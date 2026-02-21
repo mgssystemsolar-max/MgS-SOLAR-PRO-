@@ -1,39 +1,89 @@
 
-import React, { useState } from 'react';
-import { Map, MousePointerClick, Maximize2, Grid3X3, X, Compass } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet default icon issue
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface Props {
   lat?: number;
   lng?: number;
 }
 
+// Component to update map view when props change
+const MapUpdater: React.FC<{ lat: number, lng: number }> = ({ lat, lng }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], 19);
+  }, [lat, lng, map]);
+  return null;
+};
+
 export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
+  const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
 
   // Renderização do Mapa extraída para evitar re-declaração e reload do iframe
   const renderMapContent = () => (
-    <div className="relative w-full h-full bg-slate-900">
-         <iframe 
-            key={`${lat}-${lng}`} // Key força atualização apenas se mudar coordenadas
-            title="Satellite Map"
-            width="100%" 
-            height="100%" 
-            frameBorder="0" 
-            style={{ border: 0, borderRadius: '8px', display: 'block' }}
-            src={`https://maps.google.com/maps?q=${lat},${lng}&t=k&z=20&ie=UTF8&iwloc=&output=embed`}
-            allowFullScreen
-         />
+    <div className="relative w-full h-full bg-slate-900 z-0">
+         <MapContainer 
+            center={[lat!, lng!]} 
+            zoom={19} 
+            style={{ height: '100%', width: '100%', borderRadius: '8px' }}
+            scrollWheelZoom={true}
+            attributionControl={false}
+         >
+            {mapType === 'satellite' ? (
+                <TileLayer
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                    maxZoom={19}
+                />
+            ) : (
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+            )}
+            
+            <Marker position={[lat!, lng!]} />
+            <MapUpdater lat={lat!} lng={lng!} />
+         </MapContainer>
          
          {/* Grid Overlay */}
          <div 
-            className={`absolute inset-0 pointer-events-none z-10 transition-opacity duration-300 ${showGrid ? 'opacity-30' : 'opacity-0'}`} 
+            className={`absolute inset-0 pointer-events-none z-[400] transition-opacity duration-300 ${showGrid ? 'opacity-30' : 'opacity-0'}`} 
             style={{ 
                 backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', 
                 backgroundSize: '20px 20px' 
             }}
         />
+
+        {/* Map Type Toggle */}
+        <div className="absolute bottom-4 left-4 z-[400] flex gap-2">
+            <button 
+                onClick={() => setMapType(mapType === 'satellite' ? 'street' : 'satellite')}
+                className="bg-slate-800/90 hover:bg-slate-700 text-white p-2 rounded-lg shadow-lg border border-slate-600 text-xs font-bold flex items-center gap-2"
+            >
+                <Layers size={14} />
+                {mapType === 'satellite' ? 'Mudar p/ Mapa' : 'Mudar p/ Satélite'}
+            </button>
+        </div>
     </div>
   );
 
@@ -57,7 +107,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
       <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col animate-fade-in">
         <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800 shadow-xl">
           <h2 className="text-white font-bold flex items-center gap-2">
-            <Map size={20} className="text-orange-400" /> 
+            <MapIcon size={20} className="text-orange-400" /> 
             Avaliação de Telhado (Satélite)
           </h2>
           <div className="flex gap-2">
@@ -88,7 +138,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
       <div className="flex justify-between items-start mb-2">
         <CardHeader 
             title="Avaliação de Telhado (Satélite)" 
-            icon={<Map size={18} className="text-orange-400" />} 
+            icon={<MapIcon size={18} className="text-orange-400" />} 
             colorClass="text-orange-400" 
         />
         {hasLocation && (
