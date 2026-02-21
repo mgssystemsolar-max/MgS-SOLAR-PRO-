@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers, BarChart2, Sun } from 'lucide-react';
+import { Map as MapIcon, MousePointerClick, Maximize2, Grid3X3, X, Compass, Layers, BarChart2, Sun, ExternalLink } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { MapContainer, TileLayer, Marker, useMap, SVGOverlay } from 'react-leaflet';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -171,6 +171,12 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
     return null;
   };
 
+  const openGoogleMaps = () => {
+      if (lat && lng) {
+          window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+      }
+  };
+
   // Renderização do Mapa
   const renderMapContent = () => {
     if (!containerReady) return null;
@@ -227,6 +233,13 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             >
                 <Sun size={14} />
                 Irradiação
+            </button>
+            <button 
+                onClick={openGoogleMaps}
+                className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg shadow-lg border border-green-500 text-xs font-bold flex items-center gap-2 w-full justify-center"
+            >
+                <ExternalLink size={14} />
+                Abrir Google Maps
             </button>
         </div>
     </div>
