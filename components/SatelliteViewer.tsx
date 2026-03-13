@@ -137,9 +137,8 @@ const SolarContours: React.FC<{ lat: number, lng: number, show: boolean }> = ({ 
 export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const [showContours, setShowContours] = useState(false);
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
-  const [viewMode, setViewMode] = useState<'map' | 'chart'>('map'); 
+  const [viewMode, setViewMode] = useState<'map' | 'irradiation' | 'chart'>('map'); 
   
   const [containerReady, setContainerReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -205,7 +204,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             )}
             
             <Marker position={[lat!, lng!]} />
-            <SolarContours lat={lat!} lng={lng!} show={showContours} />
+            <SolarContours lat={lat!} lng={lng!} show={viewMode === 'irradiation'} />
             <MapUpdater lat={lat!} lng={lng!} />
          </MapContainer>
          
@@ -226,13 +225,6 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
             >
                 <Layers size={14} />
                 {mapType === 'satellite' ? 'Mapa' : 'Satélite'}
-            </button>
-            <button 
-                onClick={() => setShowContours(!showContours)}
-                className={`p-2 rounded-lg shadow-lg border border-slate-600 text-xs font-bold flex items-center gap-2 w-full justify-center transition-colors ${showContours ? 'bg-yellow-500 text-black border-yellow-600' : 'bg-slate-800/90 text-white hover:bg-slate-700'}`}
-            >
-                <Sun size={14} />
-                Irradiação
             </button>
             <button 
                 onClick={openGoogleMaps}
@@ -307,7 +299,7 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
           </div>
         </div>
         <div className="flex-1 relative bg-black">
-             {hasLocation ? (viewMode === 'map' ? renderMapContent() : renderChartContent()) : renderPlaceholder()}
+             {hasLocation ? (viewMode === 'chart' ? renderChartContent() : renderMapContent()) : renderPlaceholder()}
         </div>
       </div>
     );
@@ -332,6 +324,13 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
                         title="Ver Mapa"
                     >
                         <MapIcon size={16} />
+                    </button>
+                    <button
+                        onClick={() => setViewMode('irradiation')}
+                        className={`p-1.5 rounded transition-colors ${viewMode === 'irradiation' ? 'bg-yellow-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                        title="Ver Irradiação"
+                    >
+                        <Sun size={16} />
                     </button>
                     <button
                         onClick={() => setViewMode('chart')}
@@ -364,10 +363,10 @@ export const SatelliteViewer: React.FC<Props> = ({ lat, lng }) => {
         ref={containerRef}
         className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden border border-slate-700 shadow-inner"
       >
-         {hasLocation ? (viewMode === 'map' ? renderMapContent() : renderChartContent()) : renderPlaceholder()}
+         {hasLocation ? (viewMode === 'chart' ? renderChartContent() : renderMapContent()) : renderPlaceholder()}
       </div>
       
-      {hasLocation && viewMode === 'map' && (
+      {hasLocation && (viewMode === 'map' || viewMode === 'irradiation') && (
         <div className="mt-3 flex gap-2 items-start bg-yellow-500/10 p-2 rounded border border-yellow-500/20">
             <Compass size={14} className="text-yellow-500 mt-0.5 flex-shrink-0" />
             <p className="text-[10px] text-yellow-500/80 leading-tight">
