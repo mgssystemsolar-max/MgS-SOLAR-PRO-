@@ -24,6 +24,7 @@ export const INVERTER_OPTIONS = [
   "Inversor 5kW (Mono 220V)",
   "Inversor 6kW (Mono 220V)",
   "Inversor 8kW (Mono/Bifásico 220V)",
+  "Inversor 10kW (Mono/Bifásico 220V)",
   "Inversor 10kW (Trifásico 380V)",
   "Inversor 12kW (Trifásico 380V)",
   "Inversor 15kW (Trifásico 380V)",
@@ -140,7 +141,7 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
       selectedInverterKw = foundInverter || STANDARD_INVERTERS[STANDARD_INVERTERS.length - 1];
       
       // Regra básica para trifásico vs monofásico baseada na potência
-      isThreePhase = selectedInverterKw >= 8;
+      isThreePhase = selectedInverterKw >= 12;
       suggestedInverter = `Inversor ${selectedInverterKw}kW (${isThreePhase ? 'Trifásico 380V' : 'Mono/Bifásico 220V'})`;
   }
 
@@ -175,11 +176,12 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
   let breakerRating = "16A";
   let dpsRating = "Classe II - 275V / 40kA";
   
-  const designCurrent = nominalCurrent * 1.25; // 25% margem de segurança
+  // Corrente máxima de saída do inversor (geralmente ~10% acima da nominal)
+  const designCurrent = nominalCurrent * 1.1; 
 
   const sizingTable = [
       { maxBreaker: 16, cable: "2.5mm²" },
-      { maxBreaker: 20, cable: "2.5mm²" },
+      { maxBreaker: 20, cable: "4.0mm²" }, // Ajustado para 4.0mm² por segurança em energia solar contínua
       { maxBreaker: 25, cable: "4.0mm²" },
       { maxBreaker: 32, cable: "6.0mm²" },
       { maxBreaker: 40, cable: "10.0mm²" },
