@@ -1,4 +1,11 @@
 
+export interface UploadedBill {
+  id: string;
+  fileUrl: string;
+  name: string;
+  date: string;
+}
+
 export interface SolarSystemData {
   clientName?: string;
   clientPhone?: string;
@@ -23,6 +30,7 @@ export interface SolarSystemData {
   latitude?: number;
   longitude?: number;
   address?: string;
+  uploadedBills?: UploadedBill[];
 }
 
 export interface TechnicalSpecs {

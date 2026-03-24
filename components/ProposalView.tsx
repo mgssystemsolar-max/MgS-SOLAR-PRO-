@@ -56,7 +56,7 @@ export const ProposalView: React.FC<Props> = ({
   const estimatedConsumption = Math.round(data.billAmount / data.energyTariff);
 
   return (
-    <div className="bg-white text-slate-800 p-8 rounded-xl shadow-2xl max-w-5xl mx-auto print:shadow-none print:p-0 print:max-w-none animate-fade-in relative overflow-hidden font-sans">
+    <div id="proposal-content" className="bg-white text-slate-800 p-8 rounded-xl shadow-2xl max-w-5xl mx-auto print:shadow-none print:p-0 print:max-w-none animate-fade-in relative overflow-hidden font-sans">
       
       {/* MARCA D'ÁGUA / TIMBRE */}
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">

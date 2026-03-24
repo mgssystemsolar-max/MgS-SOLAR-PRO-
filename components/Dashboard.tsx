@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Save, Printer, History, LayoutTemplate, PenTool, Trash2, X, Calculator } from 'lucide-react';
+import { Save, Printer, History, LayoutTemplate, PenTool, Trash2, X, Calculator, Download } from 'lucide-react';
 import { Header } from './Header';
 import { CommercialCard } from './CommercialCard';
 import { TechnicalCard } from './TechnicalCard';
@@ -14,6 +14,7 @@ import { calculateTechnicalSpecs, calculateProduction, generateDefaultChecklist,
 import { SolarSystemData, ChecklistItem, User, SavedProject, ProposalSettings } from '../types';
 
 import { saveProjectOffline, getOfflineProjects, deleteProjectOffline, syncOfflineData } from '../services/offlineStorage';
+import html2pdf from 'html2pdf.js';
 
 interface DashboardProps {
   user: User;
@@ -217,8 +218,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
       // 2. Aguarda um breve momento para o React atualizar o DOM antes de chamar o print
       setTimeout(() => {
-          window.print();
-      }, 500);
+          const element = document.getElementById('proposal-content');
+          if (element) {
+              const opt = {
+                  margin:       [5, 5, 5, 5],
+                  filename:     `Proposta_${solarData.clientName || 'Cliente'}.pdf`,
+                  image:        { type: 'jpeg', quality: 0.98 },
+                  html2canvas:  { scale: 2, useCORS: true, logging: false },
+                  jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+              };
+              
+              // Tenta usar html2pdf para baixar o arquivo
+              html2pdf().set(opt).from(element).save().catch((err: any) => {
+                  console.error("Erro ao gerar PDF:", err);
+                  // Fallback para impressão nativa caso o html2pdf falhe
+                  window.print();
+              });
+          } else {
+              window.print();
+          }
+      }, 800);
   };
 
   const handleLoadProject = (proj: SavedProject) => {
@@ -344,21 +363,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             />
         )}
 
-        <div className="flex gap-4 print:hidden mt-6">
-          <button 
-            onClick={openSaveModal}
-            className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg group"
-          >
-            <Save size={20} className="group-hover:text-green-400" />
-            SALVAR PROJETO
-          </button>
-          <button 
-            onClick={handlePrint}
-            className="flex-1 bg-sky-500 hover:bg-sky-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg shadow-sky-900/20"
-          >
-            <Printer size={20} />
-            IMPRIMIR PROPOSTA
-          </button>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-4 print:hidden mt-6">
+            <button 
+              onClick={openSaveModal}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg group"
+            >
+              <Save size={20} className="group-hover:text-green-400" />
+              SALVAR PROJETO
+            </button>
+            <button 
+              onClick={handlePrint}
+              className="flex-1 bg-sky-500 hover:bg-sky-600 text-white p-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg shadow-sky-900/20"
+            >
+              <Download size={20} />
+              BAIXAR PROPOSTA (PDF)
+            </button>
+          </div>
         </div>
 
       </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap, UploadCloud, FileText, ScanLine, Crosshair, History, Clock } from 'lucide-react';
+import { DollarSign, MapPin, Search, Loader2, User, Phone, MessageCircle, Send, Wrench, Zap, Wand2, Calculator, Wallet, Building, PlugZap, UploadCloud, FileText, ScanLine, Crosshair, History, Clock, X } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculatePayback, calculateModulesFromBill, calculateStringSuggestion } from '../services/solarLogic';
@@ -314,6 +314,37 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
       }
   };
 
+  const handleMultipleBillsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files) return;
+
+      const newBills = Array.from(files).map(file => {
+          return new Promise<{ id: string, fileUrl: string, name: string, date: string }>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                  resolve({
+                      id: Math.random().toString(36).substring(7),
+                      fileUrl: event.target?.result as string,
+                      name: file.name,
+                      date: new Date().toLocaleDateString('pt-BR')
+                  });
+              };
+              reader.readAsDataURL(file);
+          });
+      });
+
+      Promise.all(newBills).then(uploaded => {
+          const currentBills = data.uploadedBills || [];
+          onChange('uploadedBills', [...currentBills, ...uploaded] as any);
+      });
+  };
+
+  const removeBill = (id: string) => {
+      if (!data.uploadedBills) return;
+      const updated = data.uploadedBills.filter(b => b.id !== id);
+      onChange('uploadedBills', updated as any);
+  };
+
   // CÁLCULO DE PAYBACK AUTOMÁTICO
   // Usa a Geração Média (specs) x Tarifa para saber a economia real, e não a conta fixa.
   const estimatedMonthlySavings = specs.generationMonthlyAvg * data.energyTariff;
@@ -543,6 +574,54 @@ export const CommercialCard: React.FC<Props> = ({ data, onChange, specs }) => {
           />
           <p className="text-[9px] text-sky-400 mt-1">Consumo Est: ~{calculatedAvgConsumption} kWh</p>
         </div>
+      </div>
+
+      {/* HISTÓRICO DE CONTAS */}
+      <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 mb-4">
+        <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+                <FileText size={16} className="text-sky-400" />
+                <span className="text-xs font-bold text-sky-400 uppercase">Histórico de Contas</span>
+            </div>
+            <label className="cursor-pointer bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                <UploadCloud size={12} /> Upload
+                <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*,application/pdf" 
+                    className="hidden" 
+                    onChange={handleMultipleBillsUpload} 
+                />
+            </label>
+        </div>
+        
+        {data.uploadedBills && data.uploadedBills.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {data.uploadedBills.map((bill) => (
+                    <div key={bill.id} className="relative group bg-slate-800 rounded-lg p-2 border border-slate-700 flex flex-col items-center justify-center">
+                        <button 
+                            onClick={() => removeBill(bill.id)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                        >
+                            <X size={12} />
+                        </button>
+                        {bill.fileUrl.startsWith('data:image') ? (
+                            <img src={bill.fileUrl} alt={bill.name} className="w-full h-16 object-cover rounded mb-1 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(bill.fileUrl)} />
+                        ) : (
+                            <div className="w-full h-16 bg-slate-700 rounded mb-1 flex items-center justify-center cursor-pointer hover:bg-slate-600 transition-colors" onClick={() => window.open(bill.fileUrl)}>
+                                <FileText size={24} className="text-slate-400" />
+                            </div>
+                        )}
+                        <span className="text-[9px] text-slate-400 truncate w-full text-center" title={bill.name}>{bill.name}</span>
+                        <span className="text-[8px] text-slate-500">{bill.date}</span>
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <div className="text-center py-4 border-2 border-dashed border-slate-700 rounded-lg">
+                <p className="text-[10px] text-slate-500">Nenhuma conta enviada.</p>
+            </div>
+        )}
       </div>
       
       {/* SEÇÃO FINANCEIRA REFORMULADA */}
