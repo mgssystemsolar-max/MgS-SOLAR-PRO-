@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Zap, Camera, Ruler, Weight, Activity, Cable, Cpu, Home, Sliders, Box, Info, X } from 'lucide-react';
+import { Zap, Camera, Ruler, Weight, Activity, Cable, Cpu, Home, Sliders, Box, Info, X, ShieldAlert } from 'lucide-react';
 import { Card, CardHeader } from './ui/Card';
 import { SolarSystemData, TechnicalSpecs } from '../types';
 import { calculateStringSuggestion, calculateModulesFromBill, MODULE_OPTIONS, INVERTER_OPTIONS } from '../services/solarLogic';
@@ -246,6 +246,14 @@ export const TechnicalCard: React.FC<Props> = ({ data, onChange, specs, onImageC
                  </div>
                  <div className="text-red-400 font-bold text-lg">{specs.breakerRating}</div>
                  <div className="text-[9px] text-slate-500">Curva C - DIN</div>
+             </div>
+
+             {/* DPS */}
+             <div className="bg-slate-900/80 p-3 hover:bg-slate-800 transition-colors border-t border-slate-700/30 col-span-2">
+                 <div className="text-[10px] text-slate-500 font-bold uppercase mb-1 flex items-center gap-1">
+                    <ShieldAlert size={10} /> DPS C.A. (Proteção contra Surtos)
+                 </div>
+                 <div className="text-orange-400 font-bold text-sm">{specs.dpsRating}</div>
              </div>
 
              {/* Área */}

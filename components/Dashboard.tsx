@@ -142,6 +142,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       solarData.moduleCount, 
       specs.cableGauge, 
       specs.breakerRating, 
+      specs.dpsRating,
       solarData.roofType,
       specs.suggestedInverter
     );
@@ -151,7 +152,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         return existing ? { ...newItem, observation: existing.observation ? existing.observation : newItem.observation } : newItem;
       });
     });
-  }, [solarData.moduleCount, specs.cableGauge, specs.breakerRating, solarData.roofType, specs.suggestedInverter]);
+  }, [solarData.moduleCount, specs.cableGauge, specs.breakerRating, specs.dpsRating, solarData.roofType, specs.suggestedInverter]);
 
   // Handlers
   const handleDataChange = (field: keyof SolarSystemData, value: number | string) => {

@@ -35,6 +35,7 @@ export interface TechnicalSpecs {
   totalWeight: number; 
   cableGauge: string;
   breakerRating: string;
+  dpsRating: string;
   nominalCurrent: number; 
   stringConfigText: string; 
   

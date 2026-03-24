@@ -170,42 +170,34 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
   }
 
   // Dimensionamento de Cabos e Disjuntores
-  // Fatores de agrupamento e temperatura simplificados para estimativa
+  // Fatores de agrupamento e temperatura simplificados para estimativa (Referência NBR 5410, PVC 70°C, Método B1)
   let cableGauge = "2.5mm²";
   let breakerRating = "16A";
+  let dpsRating = "Classe II - 275V / 40kA";
+  
   const designCurrent = nominalCurrent * 1.25; // 25% margem de segurança
 
-  if (designCurrent <= 21) {
-      cableGauge = "2.5mm²";
-      breakerRating = "20A"; 
-  } else if (designCurrent <= 28) {
-      cableGauge = "4.0mm²";
-      breakerRating = "25A"; 
-  } else if (designCurrent <= 36) {
-      cableGauge = "6.0mm²";
-      breakerRating = "32A"; 
-  } else if (designCurrent <= 50) {
-      cableGauge = "10.0mm²";
-      breakerRating = "50A";
-  } else if (designCurrent <= 68) {
-      cableGauge = "16.0mm²";
-      breakerRating = "63A";
-  } else if (designCurrent <= 89) {
-      cableGauge = "25.0mm²";
-      breakerRating = "80A";
-  } else if (designCurrent <= 111) {
-      cableGauge = "35.0mm²";
-      breakerRating = "100A";
-  } else if (designCurrent <= 145) {
-      cableGauge = "50.0mm²";
-      breakerRating = "125A";
-  } else if (designCurrent <= 190) {
-      cableGauge = "70.0mm²";
-      breakerRating = "160A";
-  } else {
-      cableGauge = "95.0mm² +";
-      breakerRating = "200A +";
-  }
+  const sizingTable = [
+      { maxBreaker: 16, cable: "2.5mm²" },
+      { maxBreaker: 20, cable: "2.5mm²" },
+      { maxBreaker: 25, cable: "4.0mm²" },
+      { maxBreaker: 32, cable: "6.0mm²" },
+      { maxBreaker: 40, cable: "10.0mm²" },
+      { maxBreaker: 50, cable: "10.0mm²" },
+      { maxBreaker: 63, cable: "16.0mm²" },
+      { maxBreaker: 80, cable: "25.0mm²" },
+      { maxBreaker: 100, cable: "35.0mm²" },
+      { maxBreaker: 125, cable: "50.0mm²" },
+      { maxBreaker: 160, cable: "70.0mm²" },
+      { maxBreaker: 200, cable: "95.0mm²" },
+      { maxBreaker: 250, cable: "120.0mm²" }
+  ];
+
+  const selectedSizing = sizingTable.find(s => s.maxBreaker >= designCurrent) || { maxBreaker: 250, cable: "120.0mm² +" };
+  
+  breakerRating = `${selectedSizing.maxBreaker}A ${isThreePhase ? '(Trifásico)' : '(Bifásico/Monofásico)'}`;
+  cableGauge = selectedSizing.cable;
+  dpsRating = `DPS CA Classe II - 275V / 40kA ${isThreePhase ? '(4 Polos)' : '(2 Polos)'}`;
 
   // 4. Strings Logic text
   const numStrings = data.modulesPerString > 0 
@@ -239,6 +231,7 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
     totalWeight,
     cableGauge,
     breakerRating,
+    dpsRating,
     nominalCurrent: Number(nominalCurrent.toFixed(1)),
     stringConfigText,
     generationYearly: Math.round(totalYearlyGen),
@@ -294,6 +287,7 @@ export const generateDefaultChecklist = (
   moduleCount: number, 
   cableGauge: string, 
   breakerRating: string, 
+  dpsRating: string,
   roofType: string, 
   inverterModel: string
 ): ChecklistItem[] => {
@@ -309,10 +303,11 @@ export const generateDefaultChecklist = (
     { id: '1', label: 'Painéis Solares', quantity: moduleCount, observation: '' },
     { id: '8', label: inverterModel, quantity: '1 un', observation: 'Verificar modelo e fabricante na proposta' },
     { id: '2', label: 'Cabo Solar (m)', quantity: moduleCount * 10, observation: '' },
-    { id: '3', label: 'Cabo CA', quantity: cableGauge, observation: '' },
-    { id: '4', label: 'Disjuntor CA', quantity: breakerRating, observation: '' },
+    { id: '3', label: 'Cabo CA', quantity: cableGauge, observation: 'Dimensionado conf. NBR 5410' },
+    { id: '4', label: 'Disjuntor CA', quantity: breakerRating, observation: 'Curva C' },
+    { id: '9', label: 'DPS CA', quantity: '1 un', observation: dpsRating },
     { id: '5', label: 'Estrutura Fixação', quantity: '1 Kit', observation: structureType },
-    { id: '6', label: 'String Box', quantity: '1 un', observation: '' },
+    { id: '6', label: 'String Box CC', quantity: '1 un', observation: 'Com DPS CC Classe II (1040V) e Chave Seccionadora' },
     { id: '7', label: 'Conectores MC4', quantity: '1 Kit', observation: '' },
   ];
 };
