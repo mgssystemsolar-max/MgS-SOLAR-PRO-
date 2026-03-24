@@ -181,8 +181,8 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
 
   const sizingTable = [
       { maxBreaker: 16, cable: "2.5mm²" },
-      { maxBreaker: 20, cable: "4.0mm²" }, // Ajustado para 4.0mm² por segurança em energia solar contínua
-      { maxBreaker: 25, cable: "4.0mm²" },
+      { maxBreaker: 20, cable: "4.0mm²" }, 
+      { maxBreaker: 25, cable: "6.0mm²" }, // Ajustado para 6.0mm² por segurança em energia solar contínua
       { maxBreaker: 32, cable: "6.0mm²" },
       { maxBreaker: 40, cable: "10.0mm²" },
       { maxBreaker: 50, cable: "10.0mm²" },
@@ -195,8 +195,20 @@ export const calculateTechnicalSpecs = (data: SolarSystemData): TechnicalSpecs =
       { maxBreaker: 250, cable: "120.0mm²" }
   ];
 
-  const selectedSizing = sizingTable.find(s => s.maxBreaker >= designCurrent) || { maxBreaker: 250, cable: "120.0mm² +" };
+  let selectedSizing = sizingTable.find(s => s.maxBreaker >= designCurrent) || { maxBreaker: 250, cable: "120.0mm² +" };
   
+  // Regra de ouro de mercado: Inversores de 10kW (Mono/Bifásico) exigem cabo de 10mm²
+  // O cálculo acima já atinge isso (45.45A * 1.1 = 50A -> 10mm²), mas adicionamos uma trava de segurança
+  if (inverterPowerKw >= 10 && !isThreePhase && parseInt(selectedSizing.cable) < 10) {
+      selectedSizing = sizingTable.find(s => s.cable === "10.0mm²") || selectedSizing;
+  }
+  
+  // Para inversores trifásicos de 10kW (380V), a corrente é ~15A por fase. 
+  // O cálculo dá 4.0mm², o que é correto pela norma, mas garantimos no mínimo 4.0mm² para qualquer trifásico >= 10kW
+  if (inverterPowerKw >= 10 && isThreePhase && parseInt(selectedSizing.cable) < 4) {
+      selectedSizing = sizingTable.find(s => s.cable === "4.0mm²") || selectedSizing;
+  }
+
   breakerRating = `${selectedSizing.maxBreaker}A ${isThreePhase ? '(Trifásico)' : '(Bifásico/Monofásico)'}`;
   cableGauge = selectedSizing.cable;
   dpsRating = `DPS CA Classe II - 275V / 40kA ${isThreePhase ? '(4 Polos)' : '(2 Polos)'}`;
