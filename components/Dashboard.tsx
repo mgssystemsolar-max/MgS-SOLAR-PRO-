@@ -367,6 +367,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         onClose={() => setCalculatorOpen(false)}
         initialHsp={solarData.hsp}
         initialModulePower={solarData.modulePowerW}
+        initialConsumption={solarData.energyTariff > 0 ? Math.round(solarData.billAmount / solarData.energyTariff) : 500}
+        onApply={(updates) => {
+          handleDataChange('moduleCount', updates.moduleCount);
+          handleDataChange('modulePowerW', updates.modulePowerW);
+          handleDataChange('hsp', updates.hsp);
+          handleDataChange('selectedInverter', updates.selectedInverter);
+          
+          setCalculatorOpen(false);
+          setViewMode('proposal');
+        }}
       />
 
       {/* Save Project Modal */}

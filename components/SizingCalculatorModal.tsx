@@ -1,21 +1,39 @@
-import React, { useState, useMemo } from 'react';
-import { X, Calculator, Sun, Maximize, Zap, BatteryCharging, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, Calculator, Sun, Maximize, Zap, BatteryCharging, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { INVERTER_OPTIONS } from '../services/solarLogic';
 
 interface SizingCalculatorModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialHsp?: number;
   initialModulePower?: number;
+  initialConsumption?: number;
+  onApply: (updates: { moduleCount: number, modulePowerW: number, hsp: number, selectedInverter: string }) => void;
 }
 
-export const SizingCalculatorModal: React.FC<SizingCalculatorModalProps> = ({ isOpen, onClose, initialHsp = 5.0, initialModulePower = 550 }) => {
-  const [targetConsumption, setTargetConsumption] = useState<number>(500);
+export const SizingCalculatorModal: React.FC<SizingCalculatorModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  initialHsp = 5.0, 
+  initialModulePower = 550,
+  initialConsumption = 500,
+  onApply
+}) => {
+  const [targetConsumption, setTargetConsumption] = useState<number>(initialConsumption);
   const [roofArea, setRoofArea] = useState<number>(50);
   const [panelPower, setPanelPower] = useState<number>(initialModulePower);
   const [panelWidth, setPanelWidth] = useState<number>(1.134);
   const [panelHeight, setPanelHeight] = useState<number>(2.278);
   const [hsp, setHsp] = useState<number>(initialHsp);
   const [systemLosses, setSystemLosses] = useState<number>(20); // 20% losses
+  const [selectedInverter, setSelectedInverter] = useState<string>(INVERTER_OPTIONS[0]);
+
+  // Update target consumption when initialConsumption changes
+  useEffect(() => {
+    if (isOpen) {
+      setTargetConsumption(initialConsumption);
+    }
+  }, [initialConsumption, isOpen]);
 
   const calculations = useMemo(() => {
     // 1. Calculate required daily energy
@@ -196,10 +214,21 @@ export const SizingCalculatorModal: React.FC<SizingCalculatorModalProps> = ({ is
               
               <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 col-span-2">
                 <p className="text-sm text-slate-500 font-medium mb-1">Inversor Recomendado</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-3">
                   <BatteryCharging className="text-orange-500" size={20} />
                   <p className="text-xl font-bold text-slate-800">~ {calculations.recommendedInverter} <span className="text-sm font-normal text-slate-500">kW</span></p>
                 </div>
+                
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Selecionar Inversor para o Projeto</label>
+                <select 
+                  value={selectedInverter}
+                  onChange={(e) => setSelectedInverter(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-slate-50"
+                >
+                  {INVERTER_OPTIONS.map(inv => (
+                    <option key={inv} value={inv}>{inv}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -224,12 +253,25 @@ export const SizingCalculatorModal: React.FC<SizingCalculatorModalProps> = ({ is
           </div>
         </div>
         
-        <div className="p-4 bg-slate-50 border-t flex justify-end rounded-b-2xl">
+        <div className="p-4 bg-slate-50 border-t flex justify-end gap-3 rounded-b-2xl">
           <button 
             onClick={onClose}
-            className="px-6 py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 transition-colors"
+            className="px-6 py-2 bg-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-300 transition-colors"
           >
-            Fechar Calculadora
+            Cancelar
+          </button>
+          <button 
+            onClick={() => {
+              onApply({
+                moduleCount: calculations.numberOfPanels,
+                modulePowerW: panelPower,
+                hsp: hsp,
+                selectedInverter: selectedInverter
+              });
+            }}
+            className="px-6 py-2 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-colors flex items-center gap-2 shadow-lg shadow-sky-600/20"
+          >
+            Aplicar e Gerar Proposta <ArrowRight size={18} />
           </button>
         </div>
       </div>
